@@ -47,6 +47,9 @@ _estado: dict = {"fila": None, "fila_df": None, "stats": None}
 # Histórico de edições por solicitacao_id — persiste enquanto o servidor estiver no ar
 _historico: dict[str, list] = {}
 
+# Disparos de SMS por solicitacao_id
+_disparos_sms: dict[str, list] = {}
+
 # Solicitações de reordenação manual
 _solicitacoes: list = []
 _solicitacoes_counter: int = 0
@@ -338,6 +341,77 @@ def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
 @app.get("/api/fila/{solicitacao_id}/historico")
 def get_historico(solicitacao_id: str):
     return JSONResponse(_historico.get(solicitacao_id, []))
+
+
+@app.post("/api/fila/{solicitacao_id}/disparar-sms")
+def disparar_sms(solicitacao_id: str):
+    if _estado["fila"] is None:
+        raise HTTPException(status_code=404, detail="Nenhum dado processado ainda.")
+
+    paciente = next(
+        (p for p in _estado["fila"] if str(p.get("solicitacao_id")) == solicitacao_id),
+        None,
+    )
+    if paciente is None:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado.")
+
+    historico = _disparos_sms.get(solicitacao_id, [])
+    tentativa = len(historico) + 1
+    if tentativa > 3:
+        raise HTTPException(status_code=409, detail="Limite de 3 tentativas de contato atingido.")
+
+    # Monta a mensagem sem acentos, máx 160 chars
+    primeiro_nome = paciente.get("nome_paciente", "").split()[0]
+    msg = (
+        f"SUS: Ola {primeiro_nome}, voce esta na fila de cirurgia "
+        f"(prot {solicitacao_id}). "
+        f"Responda: 1-Ainda preciso 2-Ja operei 3-Desisti 4-Piorei, preciso de uma consulta urgente."
+    )
+    if len(msg) > 160:
+        msg = msg[:160]
+
+    registro = {
+        "tentativa": tentativa,
+        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "mensagem": msg,
+        "chars": len(msg),
+    }
+    _disparos_sms.setdefault(solicitacao_id, []).append(registro)
+
+    return JSONResponse({"ok": True, "registro": registro, "total_tentativas": tentativa})
+
+
+@app.get("/api/fila/{solicitacao_id}/disparos-sms")
+def get_disparos_sms(solicitacao_id: str):
+    return JSONResponse(_disparos_sms.get(solicitacao_id, []))
+
+
+class RemocaoPaciente(BaseModel):
+    motivo: str  # "atendido" | "obito" | "desistiu"
+
+
+@app.post("/api/fila/{solicitacao_id}/remover")
+def remover_paciente(solicitacao_id: str, body: RemocaoPaciente):
+    if _estado["fila"] is None:
+        raise HTTPException(status_code=404, detail="Nenhum dado processado ainda.")
+
+    idx = next(
+        (i for i, p in enumerate(_estado["fila"]) if str(p.get("solicitacao_id")) == solicitacao_id),
+        None,
+    )
+    if idx is None:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado.")
+
+    _estado["fila"].pop(idx)
+    for i, p in enumerate(_estado["fila"]):
+        p["posicao"] = i + 1
+
+    if _estado["fila_df"] is not None:
+        _estado["fila_df"] = _estado["fila_df"][
+            _estado["fila_df"]["solicitacao_id"].astype(str) != solicitacao_id
+        ].reset_index(drop=True)
+
+    return JSONResponse({"ok": True})
 
 
 # ── Solicitações de reordenação manual ───────────────────────────────────────

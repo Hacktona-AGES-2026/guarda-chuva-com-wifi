@@ -81,7 +81,13 @@ function exibirDetalhesPaciente(p) {
     const cor = COR_CLASSE[p.classe_swalis] || "#999";
 
     divInfos.innerHTML = `
-        <h3>${p.posicao}. ${p.nome_paciente}</h3>
+        <div class="detalhe-cabecalho">
+            <h3>${p.posicao}. ${p.nome_paciente}</h3>
+            <button class="btn-editar" id="btnAbrirEdicao">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar dados
+            </button>
+        </div>
         <p><strong>ID:</strong> ${p.solicitacao_id} &nbsp;|&nbsp; <strong>Paciente:</strong> ${p.paciente_id}</p>
         <p><strong>Idade:</strong> ${p.idade} &nbsp;|&nbsp; <strong>Sexo:</strong> ${p.sexo} &nbsp;|&nbsp; <strong>Município:</strong> ${p.municipio}</p>
         <p><strong>CID:</strong> ${p.cid_principal} — ${p.cid_descricao || "—"}</p>
@@ -99,17 +105,54 @@ function exibirDetalhesPaciente(p) {
             <span class="localizacao-loading">Buscando localização...</span>
         </div>
         <hr style="margin:10px 0; border-color:#eee">
-        <button class="btn-editar" id="btnAbrirEdicao">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Editar dados
-        </button>
+        <div id="smsBox"></div>
         <hr style="margin:10px 0; border-color:#eee">
         <div id="historicoBox"></div>
+        <hr style="margin:10px 0; border-color:#eee">
+        <div id="remocaoBox">
+            <button class="btn-remover" id="btnRemover">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Remover
+            </button>
+            <div id="remocaoForm" class="remocao-form" style="display:none">
+                <label class="remocao-label">Motivo da remoção <span style="color:#991b1b">*</span></label>
+                <select id="selectMotivo" class="remocao-select">
+                    <option value="">— Selecione —</option>
+                    <option value="atendido">Já foi atendido</option>
+                    <option value="obito">Paciente veio a óbito</option>
+                    <option value="desistiu">Paciente desistiu</option>
+                </select>
+                <label class="remocao-label" style="margin-top:8px">
+                    Digite o primeiro nome do paciente para confirmar
+                    <span class="remocao-nome-hint">(${p.nome_paciente.split(" ")[0]})</span>
+                </label>
+                <input type="text" id="inputConfirmaNome" class="remocao-input" placeholder="Primeiro nome..." autocomplete="off">
+                <p id="msgRemocao" class="remocao-msg" style="display:none"></p>
+                <div class="remocao-acoes">
+                    <button class="btn-confirmar-remocao" id="btnConfirmarRemocao">Confirmar remoção</button>
+                    <button class="btn-cancelar-remocao" id="btnCancelarRemocao">Cancelar</button>
+                </div>
+            </div>
+        </div>
     `;
 
     document.getElementById("btnAbrirEdicao").addEventListener("click", () => exibirFormularioEdicao(p));
     buscarLocalizacao(p.municipio);
+    carregarSms(p.solicitacao_id);
     buscarHistorico(p.solicitacao_id);
+
+    document.getElementById("btnRemover").addEventListener("click", () => {
+        document.getElementById("remocaoForm").style.display = "block";
+        document.getElementById("btnRemover").style.display = "none";
+    });
+    document.getElementById("btnCancelarRemocao").addEventListener("click", () => {
+        document.getElementById("remocaoForm").style.display = "none";
+        document.getElementById("btnRemover").style.display = "inline-flex";
+        document.getElementById("selectMotivo").value = "";
+        document.getElementById("inputConfirmaNome").value = "";
+        document.getElementById("msgRemocao").style.display = "none";
+    });
+    document.getElementById("btnConfirmarRemocao").addEventListener("click", () => confirmarRemocao(p));
 }
 
 function exibirFormularioEdicao(p) {
@@ -582,6 +625,132 @@ function _mostrarToast(texto) {
     toast.textContent = texto;
     toast.classList.add("toast-visivel");
     setTimeout(() => toast.classList.remove("toast-visivel"), 3000);
+}
+
+async function carregarSms(solicitacaoId) {
+    const box = document.getElementById("smsBox");
+    if (!box) return;
+
+    try {
+        const resp = await fetch(`/api/fila/${encodeURIComponent(solicitacaoId)}/disparos-sms`);
+        if (!resp.ok) throw new Error();
+        const disparos = await resp.json();
+        _renderizarSmsBox(box, solicitacaoId, disparos);
+    } catch {
+        _renderizarSmsBox(box, solicitacaoId, []);
+    }
+}
+
+function _renderizarSmsBox(box, solicitacaoId, disparos) {
+    const total = disparos.length;
+    const podisparar = total < 3;
+
+    // Monta preview da mensagem baseado no paciente atual
+    const pac = pacientes.find(p => String(p.solicitacao_id) === String(solicitacaoId));
+    const primeiroNome = pac ? pac.nome_paciente.split(" ")[0] : "Paciente";
+    const msg = `SUS: Ola ${primeiroNome}, voce esta na fila de cirurgia (prot ${solicitacaoId}). Responda: 1-Ainda preciso 2-Ja operei 3-Desisti 4-Piorei, preciso de uma consulta urgente.`;
+
+    const historicoHtml = total
+        ? disparos.slice().reverse().map(d =>
+            `<div class="sms-tentativa">
+                <span class="sms-tent-num">Tentativa ${d.tentativa}</span>
+                <span class="sms-tent-data">${d.timestamp}</span>
+                <span class="sms-tent-chars">${d.chars} chars</span>
+            </div>`
+          ).join("")
+        : `<p class="sms-vazio">Nenhum contato disparado ainda.</p>`;
+
+    box.innerHTML = `
+        <p class="sms-titulo">Contato por SMS</p>
+        <div class="sms-preview-box">
+            <span class="sms-preview-label">Prévia da mensagem (${msg.length}/160 chars)</span>
+            <p class="sms-preview-texto">${msg}</p>
+        </div>
+        <div class="sms-contador">Tentativas: <strong>${total}/3</strong></div>
+        ${historicoHtml}
+        ${podisparar
+            ? `<button class="btn-disparar-sms" id="btnDispararSms" data-sid="${solicitacaoId}">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                   Disparar contato (${total + 1}ª tentativa)
+               </button>`
+            : `<p class="sms-limite">Limite de 3 tentativas atingido.</p>`
+        }
+    `;
+
+    if (podisparar) {
+        document.getElementById("btnDispararSms").addEventListener("click", () => dispararSms(solicitacaoId));
+    }
+}
+
+async function confirmarRemocao(p) {
+    const motivo = document.getElementById("selectMotivo").value;
+    const nomeDigitado = document.getElementById("inputConfirmaNome").value.trim();
+    const msgEl = document.getElementById("msgRemocao");
+    const btn = document.getElementById("btnConfirmarRemocao");
+
+    const primeiroNome = p.nome_paciente.split(" ")[0].toLowerCase();
+
+    if (!motivo) {
+        msgEl.textContent = "Selecione o motivo da remoção.";
+        msgEl.style.display = "block";
+        return;
+    }
+    if (nomeDigitado.toLowerCase() !== primeiroNome) {
+        msgEl.textContent = "Nome incorreto. Digite o primeiro nome do paciente para confirmar.";
+        msgEl.style.display = "block";
+        return;
+    }
+
+    msgEl.style.display = "none";
+    btn.disabled = true;
+    btn.textContent = "Removendo...";
+
+    try {
+        const resp = await fetch(`/api/fila/${encodeURIComponent(p.solicitacao_id)}/remover`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ motivo }),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Erro ao remover paciente.");
+        }
+
+        // Atualiza lista local
+        pacientes = pacientes.filter(pac => pac.solicitacao_id !== p.solicitacao_id);
+        pacientes.forEach((pac, i) => { pac.posicao = i + 1; });
+        pacientesFiltrados = pacientesFiltrados.filter(pac => pac.solicitacao_id !== p.solicitacao_id);
+
+        renderizarTudo(false);
+        document.getElementById("detalhesConteudo").innerHTML =
+            `<p class="placeholder">Paciente removido da fila.</p>`;
+        _mostrarToast("Paciente removido com sucesso.");
+    } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Confirmar remoção";
+    }
+}
+
+async function dispararSms(solicitacaoId) {
+    const btn = document.getElementById("btnDispararSms");
+    if (btn) { btn.disabled = true; btn.textContent = "Disparando..."; }
+
+    try {
+        const resp = await fetch(`/api/fila/${encodeURIComponent(solicitacaoId)}/disparar-sms`, {
+            method: "POST",
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Erro ao disparar SMS.");
+        }
+        await carregarSms(solicitacaoId);
+        _mostrarToast("SMS simulado disparado com sucesso!");
+    } catch (err) {
+        _mostrarToast(err.message);
+        if (btn) { btn.disabled = false; btn.textContent = `Disparar contato`; }
+    }
 }
 
 // Pesquisa
