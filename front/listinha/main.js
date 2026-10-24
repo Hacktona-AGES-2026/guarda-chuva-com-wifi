@@ -102,10 +102,13 @@ function exibirDetalhesPaciente(p) {
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Editar dados
         </button>
+        <hr style="margin:10px 0; border-color:#eee">
+        <div id="historicoBox"></div>
     `;
 
     document.getElementById("btnAbrirEdicao").addEventListener("click", () => exibirFormularioEdicao(p));
     buscarLocalizacao(p.municipio);
+    buscarHistorico(p.solicitacao_id);
 }
 
 function exibirFormularioEdicao(p) {
@@ -134,11 +137,13 @@ function exibirFormularioEdicao(p) {
                 <input type="text" name="procedimento" value="${(p.procedimento || "").replace(/"/g, "&quot;")}">
             </label>
             <label>CID Principal
-                <input type="text" name="cid_principal" value="${(p.cid_principal || "").replace(/"/g, "&quot;")}">
+                <input type="text" name="cid_principal" id="inputCid" value="${(p.cid_principal || "").replace(/"/g, "&quot;")}">
             </label>
-            <label>Descrição do CID <span style="color:#d15847">*</span>
-                <input type="text" name="cid_descricao" id="cidDescricao" value="${(p.cid_descricao || "").replace(/"/g, "&quot;")}">
-            </label>
+            <div class="cid-preview-box" id="cidPreviewBox">
+                <span class="cid-preview-label">Descrição do CID</span>
+                <span class="cid-preview-valor" id="cidPreviewValor">${p.cid_descricao || "—"}</span>
+                <span class="cid-preview-status" id="cidPreviewStatus"></span>
+            </div>
             <div class="form-edicao-acoes">
                 <button class="btn-salvar" id="btnSalvar" type="button">Atualizar</button>
                 <button class="btn-cancelar" id="btnCancelar" type="button">Cancelar</button>
@@ -147,15 +152,54 @@ function exibirFormularioEdicao(p) {
         </form>
     `;
 
+    // Mostra/oculta justificativa quando classe muda
     const selectSwalis = document.getElementById("selectSwalis");
     const justBox = document.getElementById("justificativaSwalisBox");
     selectSwalis.addEventListener("change", () => {
-        const mudou = selectSwalis.value !== p.classe_swalis;
-        justBox.style.display = mudou ? "block" : "none";
+        justBox.style.display = selectSwalis.value !== p.classe_swalis ? "block" : "none";
+    });
+
+    // Lookup CID ao sair do campo
+    const inputCid = document.getElementById("inputCid");
+    inputCid.addEventListener("blur", () => buscarDescricaoCid(inputCid.value, p.cid_principal));
+    inputCid.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") buscarDescricaoCid(inputCid.value, p.cid_principal);
     });
 
     document.getElementById("btnSalvar").addEventListener("click", () => salvarEdicao(_pacienteEmEdicao));
     document.getElementById("btnCancelar").addEventListener("click", () => exibirDetalhesPaciente(_pacienteEmEdicao));
+}
+
+async function buscarDescricaoCid(codigo, cidOriginal) {
+    const valorEl = document.getElementById("cidPreviewValor");
+    const statusEl = document.getElementById("cidPreviewStatus");
+    if (!valorEl || !statusEl) return;
+
+    const norm = codigo.replace(/\./g, "").toUpperCase().trim();
+    const normOriginal = (cidOriginal || "").replace(/\./g, "").toUpperCase().trim();
+
+    if (!norm || norm === normOriginal) {
+        // Voltou ao original — restaura descrição original
+        statusEl.textContent = "";
+        statusEl.className = "cid-preview-status";
+        return;
+    }
+
+    statusEl.textContent = "Buscando...";
+    statusEl.className = "cid-preview-status cid-buscando";
+
+    try {
+        const resp = await fetch(`/api/cid/${encodeURIComponent(codigo)}`);
+        if (!resp.ok) throw new Error("não encontrado");
+        const d = await resp.json();
+        valorEl.textContent = d.descricao;
+        statusEl.textContent = "✓ encontrado";
+        statusEl.className = "cid-preview-status cid-ok";
+    } catch {
+        valorEl.textContent = "CID não encontrado na tabela";
+        statusEl.textContent = "✗ não encontrado";
+        statusEl.className = "cid-preview-status cid-erro";
+    }
 }
 
 async function salvarEdicao(pOriginal) {
@@ -163,22 +207,23 @@ async function salvarEdicao(pOriginal) {
     const btnSalvar = document.getElementById("btnSalvar");
     const msgEl = document.getElementById("msgEdicao");
 
-    const cidDescricao = form.cid_descricao.value.trim();
     const novaClasse = form.classe_swalis.value.trim();
     const classeMudou = novaClasse !== pOriginal.classe_swalis;
     const justificativaSwalis = classeMudou ? (form.justificativa_swalis?.value.trim() || "") : "";
+    const cidDescricaoPreview = document.getElementById("cidPreviewValor")?.textContent || pOriginal.cid_descricao || "";
+    const cidPrincipal = form.cid_principal.value.trim();
+    const cidMudou = cidPrincipal.replace(/\./g,"").toUpperCase() !== (pOriginal.cid_principal || "").replace(/\./g,"").toUpperCase();
 
-    // Descrição do CID deve ser sempre alterada
-    if (cidDescricao === (pOriginal.cid_descricao || "").trim()) {
-        msgEl.textContent = "A descrição do CID deve ser alterada antes de atualizar.";
-        msgEl.style.display = "block";
-        document.getElementById("cidDescricao")?.focus();
-        return;
-    }
     if (classeMudou && !justificativaSwalis) {
         msgEl.textContent = "A justificativa para alteração de classe SWALIS é obrigatória.";
         msgEl.style.display = "block";
         document.getElementById("justificativaSwalis")?.focus();
+        return;
+    }
+    if (cidMudou && cidDescricaoPreview === "CID não encontrado na tabela") {
+        msgEl.textContent = "O CID informado não foi encontrado. Verifique o código.";
+        msgEl.style.display = "block";
+        document.getElementById("inputCid")?.focus();
         return;
     }
 
@@ -188,8 +233,8 @@ async function salvarEdicao(pOriginal) {
         classe_swalis: novaClasse,
         especialidade: form.especialidade.value.trim(),
         procedimento:  form.procedimento.value.trim(),
-        cid_principal: form.cid_principal.value.trim(),
-        cid_descricao: cidDescricao,
+        cid_principal: cidPrincipal,
+        cid_descricao: cidMudou ? cidDescricaoPreview : pOriginal.cid_descricao,
     };
 
     btnSalvar.disabled = true;
@@ -261,6 +306,55 @@ async function buscarLocalizacao(municipio) {
         `;
     } catch {
         box.innerHTML = `<span class="localizacao-erro">Localização não encontrada para "${municipio}"</span>`;
+    }
+}
+
+async function buscarHistorico(solicitacaoId) {
+    const box = document.getElementById("historicoBox");
+    if (!box) return;
+
+    try {
+        const resp = await fetch(`/api/fila/${encodeURIComponent(solicitacaoId)}/historico`);
+        if (!resp.ok) throw new Error();
+        const registros = await resp.json();
+
+        if (!registros.length) {
+            box.innerHTML = `
+                <p class="historico-titulo">Histórico de Alterações</p>
+                <p class="historico-vazio">Nenhuma alteração registrada.</p>
+            `;
+            return;
+        }
+
+        const itens = registros.slice().reverse().map(r => {
+            const posStr = r.posicao_antes !== r.posicao_depois
+                ? `<span class="historico-pos">Posição: ${r.posicao_antes} → ${r.posicao_depois}</span>`
+                : `<span class="historico-pos">Posição mantida: ${r.posicao_depois}</span>`;
+            const campos = r.alteracoes.map(a =>
+                `<div class="historico-campo">
+                    <span class="historico-campo-nome">${a.campo}</span>
+                    <span class="historico-de">${a.de || "—"}</span>
+                    <span class="historico-seta">→</span>
+                    <span class="historico-para">${a.para || "—"}</span>
+                </div>`
+            ).join("");
+            return `
+                <div class="historico-item">
+                    <div class="historico-header">
+                        <span class="historico-data">${r.timestamp}</span>
+                        ${posStr}
+                    </div>
+                    ${campos}
+                </div>
+            `;
+        }).join("");
+
+        box.innerHTML = `
+            <p class="historico-titulo">Histórico de Alterações (${registros.length})</p>
+            <div class="historico-lista">${itens}</div>
+        `;
+    } catch {
+        box.innerHTML = "";
     }
 }
 

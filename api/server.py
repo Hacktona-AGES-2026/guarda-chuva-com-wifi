@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import tempfile
+from datetime import datetime
 from typing import Optional
 
 import pandas as pd
@@ -43,7 +44,21 @@ app = FastAPI(title="Priorização Cirúrgica")
 # Estado em memória — substituído a cada POST /processar
 _estado: dict = {"fila": None, "fila_df": None, "stats": None}
 
+# Histórico de edições por solicitacao_id — persiste enquanto o servidor estiver no ar
+_historico: dict[str, list] = {}
+
 FRONT_DIR = os.path.join(os.path.dirname(__file__), "..", "front")
+_CID10_PATH = os.path.join(os.path.dirname(__file__), "..", "dataset", "cid10.csv")
+
+# Tabela CID-10 em memória: chave = código normalizado (sem ponto, uppercase)
+def _carregar_cid10() -> dict:
+    try:
+        df = pd.read_csv(_CID10_PATH, encoding="utf-8")
+        return dict(zip(df["cid_norm"].str.upper().str.strip(), df["cid_descricao"]))
+    except Exception:
+        return {}
+
+_CID10: dict = _carregar_cid10()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -171,6 +186,19 @@ def get_stats():
     return JSONResponse(_estado["stats"])
 
 
+@app.get("/api/cid/{codigo}")
+def get_cid(codigo: str):
+    norm = codigo.replace(".", "").upper().strip()
+    descricao = _CID10.get(norm)
+    if descricao:
+        return JSONResponse({"codigo": codigo.upper(), "descricao": descricao})
+    # Tenta prefixo (ex: "C50" encontra "C504")
+    prefixo = next((v for k, v in _CID10.items() if k.startswith(norm)), None)
+    if prefixo:
+        return JSONResponse({"codigo": codigo.upper(), "descricao": prefixo})
+    raise HTTPException(status_code=404, detail=f"CID '{codigo}' não encontrado.")
+
+
 class EdicaoPaciente(BaseModel):
     classe_swalis: Optional[str] = None
     especialidade: Optional[str] = None
@@ -246,7 +274,33 @@ def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
     if not mask.any():
         raise HTTPException(status_code=404, detail=f"Paciente {solicitacao_id} não encontrado.")
 
+    # Captura posição e valores antes da edição
+    paciente_antes = next(
+        (p for p in _estado["fila"] if str(p.get("solicitacao_id")) == solicitacao_id),
+        None,
+    )
+    posicao_antes = paciente_antes["posicao"] if paciente_antes else None
+
     campos = edicao.model_dump(exclude_none=True)
+
+    # Registra apenas os campos que de fato mudaram
+    _LABELS = {
+        "classe_swalis": "Classe SWALIS",
+        "especialidade": "Especialidade",
+        "procedimento": "Procedimento",
+        "cid_principal": "CID Principal",
+        "cid_descricao": "Descrição do CID",
+    }
+    alteracoes = []
+    for col, novo_val in campos.items():
+        val_ant = str(paciente_antes.get(col, "") or "") if paciente_antes else ""
+        if str(novo_val).strip() != val_ant.strip():
+            alteracoes.append({
+                "campo": _LABELS.get(col, col),
+                "de": val_ant,
+                "para": str(novo_val),
+            })
+
     for col, val in campos.items():
         df.loc[mask, col] = val
 
@@ -260,7 +314,22 @@ def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
     )
     if paciente is None:
         raise HTTPException(status_code=404, detail="Paciente não encontrado após edição.")
+
+    if alteracoes:
+        registro = {
+            "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "posicao_antes": posicao_antes,
+            "posicao_depois": paciente["posicao"],
+            "alteracoes": alteracoes,
+        }
+        _historico.setdefault(solicitacao_id, []).append(registro)
+
     return JSONResponse(paciente)
+
+
+@app.get("/api/fila/{solicitacao_id}/historico")
+def get_historico(solicitacao_id: str):
+    return JSONResponse(_historico.get(solicitacao_id, []))
 
 
 @app.get("/api/exportar/completo")
