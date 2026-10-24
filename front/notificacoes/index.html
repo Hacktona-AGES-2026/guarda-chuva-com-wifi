@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificações — Guarda-chuva</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <header>
+        <div class="header-marca">
+            <img src="/mainIcon.svg" alt="Ícone Principal">
+        </div>
+        <nav class="header-nav">
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+            <span class="nav-sep"></span>
+            <a href="/listinha" class="nav-link">Fila</a>
+            <span class="nav-sep"></span>
+            <a href="/exportar" class="nav-link">Exportar</a>
+            <span class="nav-sep"></span>
+            <a href="/solicitacoes" class="nav-link">Solicitações</a>
+            <span class="nav-sep"></span>
+            <a href="/notificacoes" class="nav-link ativo">
+                Notificações
+                <span class="nav-badge" id="navBadge"></span>
+            </a>
+        </nav>
+        <button class="btn-reiniciar" title="Novo upload" onclick="window.location.href='/upload'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+            </svg>
+        </button>
+    </header>
+
+    <main>
+        <div id="painelEsquerdo">
+            <div class="lista-topo">
+                <h2>Notificações</h2>
+                <div class="filtro-tabs">
+                    <button class="filtro-tab ativo" data-filtro="todas">Todas</button>
+                    <button class="filtro-tab" data-filtro="nao-lida">Não lidas</button>
+                    <button class="filtro-tab" data-filtro="piora">Piora</button>
+                    <button class="filtro-tab" data-filtro="resposta">Respostas SMS</button>
+                </div>
+            </div>
+            <div id="listaNot"></div>
+        </div>
+
+        <div id="painelDireito">
+            <div id="detalheNot">
+                <p class="placeholder">Selecione uma notificação para ver os detalhes.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="./main.js"></script>
+</body>
+
+</html>
