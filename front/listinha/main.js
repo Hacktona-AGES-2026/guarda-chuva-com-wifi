@@ -479,6 +479,8 @@ async function enviarSolicitacao() {
 
     const lista = document.getElementById("listaPacientes");
     const nova_ordem = [...lista.querySelectorAll("[data-sid]")].map(c => c.dataset.sid);
+    const sidsOriginal = pacientesFiltrados.map(p => String(p.solicitacao_id));
+    const pacientes_movidos = nova_ordem.filter((sid, i) => sid !== sidsOriginal[i]);
 
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = "Enviando...";
@@ -488,7 +490,7 @@ async function enviarSolicitacao() {
         const resp = await fetch("/api/solicitacoes", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nova_ordem, justificativa }),
+            body: JSON.stringify({ nova_ordem, justificativa, pacientes_movidos }),
         });
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));

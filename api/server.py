@@ -341,6 +341,7 @@ def get_historico(solicitacao_id: str):
 class SolicitacaoReordenacao(BaseModel):
     nova_ordem: list[str]
     justificativa: str
+    pacientes_movidos: list[str] = []
 
 
 @app.post("/api/solicitacoes")
@@ -365,6 +366,7 @@ def criar_solicitacao(sol: SolicitacaoReordenacao):
         "justificativa": sol.justificativa,
         "nova_ordem": sol.nova_ordem,
         "ordem_anterior": ordem_anterior,
+        "pacientes_movidos": sol.pacientes_movidos,
         "status": "pendente",
     }
     _solicitacoes.append(registro)
@@ -383,13 +385,19 @@ def detalhar_solicitacao(sol_id: int):
         raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
 
     paciente_por_id = {str(p["solicitacao_id"]): p for p in (_estado["fila"] or [])}
-    pos_anterior_por_id = {str(p["solicitacao_id"]): p["posicao"] for p in (_estado["fila"] or [])}
+
+    movidos = set(sol.get("pacientes_movidos") or [])
+    # fallback: se não veio pacientes_movidos (solicitação antiga), mostra todos
+    if not movidos:
+        movidos = set(sol["nova_ordem"])
 
     nova_ordem_enriquecida = []
     for i, sid in enumerate(sol["nova_ordem"]):
+        if sid not in movidos:
+            continue
         p = paciente_por_id.get(sid, {})
         nova_pos = i + 1
-        ant_pos = sol["ordem_anterior"].index(sid) + 1 if sid in sol["ordem_anterior"] else pos_anterior_por_id.get(sid)
+        ant_pos = sol["ordem_anterior"].index(sid) + 1 if sid in sol["ordem_anterior"] else p.get("posicao")
         nova_ordem_enriquecida.append({
             "posicao_nova": nova_pos,
             "posicao_anterior": ant_pos,
