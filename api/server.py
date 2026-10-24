@@ -47,6 +47,10 @@ _estado: dict = {"fila": None, "fila_df": None, "stats": None}
 # Histórico de edições por solicitacao_id — persiste enquanto o servidor estiver no ar
 _historico: dict[str, list] = {}
 
+# Solicitações de reordenação manual
+_solicitacoes: list = []
+_solicitacoes_counter: int = 0
+
 FRONT_DIR = os.path.join(os.path.dirname(__file__), "..", "front")
 _CID10_PATH = os.path.join(os.path.dirname(__file__), "..", "dataset", "cid10.csv")
 
@@ -330,6 +334,92 @@ def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
 @app.get("/api/fila/{solicitacao_id}/historico")
 def get_historico(solicitacao_id: str):
     return JSONResponse(_historico.get(solicitacao_id, []))
+
+
+# ── Solicitações de reordenação manual ───────────────────────────────────────
+
+class SolicitacaoReordenacao(BaseModel):
+    nova_ordem: list[str]
+    justificativa: str
+
+
+@app.post("/api/solicitacoes")
+def criar_solicitacao(sol: SolicitacaoReordenacao):
+    global _solicitacoes_counter
+    if _estado["fila"] is None:
+        raise HTTPException(status_code=404, detail="Nenhum dado processado ainda.")
+
+    ids_atuais = {str(p["solicitacao_id"]) for p in _estado["fila"]}
+    ids_novos  = set(sol.nova_ordem)
+    if ids_atuais != ids_novos:
+        raise HTTPException(
+            status_code=422,
+            detail="A nova ordem deve conter exatamente os mesmos IDs da fila atual.",
+        )
+
+    ordem_anterior = [str(p["solicitacao_id"]) for p in _estado["fila"]]
+    _solicitacoes_counter += 1
+    registro = {
+        "id": _solicitacoes_counter,
+        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "justificativa": sol.justificativa,
+        "nova_ordem": sol.nova_ordem,
+        "ordem_anterior": ordem_anterior,
+        "status": "pendente",
+    }
+    _solicitacoes.append(registro)
+    return JSONResponse(registro)
+
+
+@app.get("/api/solicitacoes")
+def listar_solicitacoes():
+    return JSONResponse(list(reversed(_solicitacoes)))
+
+
+@app.get("/api/solicitacoes/{sol_id}")
+def detalhar_solicitacao(sol_id: int):
+    sol = next((s for s in _solicitacoes if s["id"] == sol_id), None)
+    if sol is None:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+
+    nome_por_id = {str(p["solicitacao_id"]): p.get("nome_paciente", "") for p in (_estado["fila"] or [])}
+    nova_ordem_enriquecida = [
+        {"posicao": i + 1, "solicitacao_id": sid, "nome_paciente": nome_por_id.get(sid, "—")}
+        for i, sid in enumerate(sol["nova_ordem"])
+    ]
+    return JSONResponse({**sol, "nova_ordem_detalhada": nova_ordem_enriquecida})
+
+
+@app.post("/api/solicitacoes/{sol_id}/aprovar")
+def aprovar_solicitacao(sol_id: int):
+    sol = next((s for s in _solicitacoes if s["id"] == sol_id), None)
+    if sol is None:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+    if sol["status"] == "aprovada":
+        raise HTTPException(status_code=409, detail="Solicitação já aprovada.")
+
+    fila_atual = {str(p["solicitacao_id"]): p for p in (_estado["fila"] or [])}
+    nova_fila = []
+    for i, sid in enumerate(sol["nova_ordem"]):
+        p = fila_atual.get(sid)
+        if p is None:
+            raise HTTPException(status_code=422, detail=f"ID {sid} não encontrado na fila.")
+        nova_fila.append({**p, "posicao": i + 1})
+
+    _estado["fila"] = nova_fila
+
+    if _estado["fila_df"] is not None:
+        df = _estado["fila_df"]
+        ordem_idx = {sid: i for i, sid in enumerate(sol["nova_ordem"])}
+        df = df.copy()
+        df["_ordem_manual"] = df["solicitacao_id"].astype(str).map(ordem_idx)
+        df = df.sort_values("_ordem_manual").drop(columns=["_ordem_manual"])
+        df = df.reset_index(drop=True)
+        df["posicao"] = df.index + 1
+        _estado["fila_df"] = df
+
+    sol["status"] = "aprovada"
+    return JSONResponse(sol)
 
 
 @app.get("/api/exportar/completo")

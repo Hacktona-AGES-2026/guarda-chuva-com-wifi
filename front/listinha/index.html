@@ -23,6 +23,8 @@
             <a href="/listinha" class="nav-link ativo">Fila</a>
             <span class="nav-sep"></span>
             <a href="/exportar" class="nav-link">Exportar</a>
+            <span class="nav-sep"></span>
+            <a href="/solicitacoes" class="nav-link">Solicitações</a>
         </nav>
         <button class="btn-reiniciar" title="Novo upload" onclick="window.location.href='/upload'">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -42,6 +44,10 @@
             </div>
             <h2>Todos os Pacientes</h2>
             <div id="listaPacientes" class="lista-pacientes"></div>
+            <button id="btnSolicitarReordenacao" class="btn-solicitar-reordenacao" style="display:none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                Solicitar Reordenação
+            </button>
         </div>
 
         <div id="painelDireito">
@@ -62,6 +68,23 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="./main.js"></script>
+
+    <!-- Modal de justificativa para reordenação -->
+    <div id="modalJustificativa" class="modal-overlay" style="display:none">
+        <div class="modal-caixa">
+            <h3 class="modal-titulo">Justificativa da Reordenação</h3>
+            <p class="modal-desc">Descreva o motivo da alteração manual da ordem da fila. A lista voltará ao estado original após o envio — a solicitação aguardará aprovação.</p>
+            <textarea id="txtJustificativa" class="modal-textarea" rows="4" placeholder="Descreva o motivo..."></textarea>
+            <p id="msgModal" class="modal-msg" style="display:none"></p>
+            <div class="modal-acoes">
+                <button id="btnConfirmarModal" class="btn-confirmar-modal">Confirmar</button>
+                <button id="btnCancelarModal" class="btn-cancelar-modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de feedback -->
+    <div id="toast" class="toast"></div>
 </body>
 
 </html>

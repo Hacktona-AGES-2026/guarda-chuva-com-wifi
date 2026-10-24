@@ -1,6 +1,7 @@
 let pacientes = [];
 let pacientesFiltrados = [];
 let _pacienteEmEdicao = null;
+let _ordemArrastada = null; // IDs na ordem atual do DOM após drag
 
 const COR_CLASSE = {
     A1: "#d15847",
@@ -368,6 +369,8 @@ function renderizarTodos() {
         const card = document.createElement("div");
         card.className = "paciente-card paciente-card-clicavel";
         card.style.borderLeftColor = cor;
+        card.setAttribute("draggable", "true");
+        card.setAttribute("data-sid", p.solicitacao_id);
         card.innerHTML = `
             <h3>${p.posicao}. ${p.nome_paciente} — ${p.solicitacao_id}</h3>
             <p><strong>Especialidade:</strong> ${p.especialidade}
@@ -377,6 +380,128 @@ function renderizarTodos() {
         card.addEventListener("click", () => exibirDetalhesPaciente(p));
         lista.appendChild(card);
     });
+
+    _configurarDragDrop();
+}
+
+function _configurarDragDrop() {
+    const lista = document.getElementById("listaPacientes");
+    if (!lista) return;
+    let cardArrastando = null;
+
+    lista.querySelectorAll("[data-sid]").forEach(card => {
+        card.addEventListener("dragstart", (e) => {
+            cardArrastando = card;
+            card.classList.add("drag-arrastando");
+            e.dataTransfer.effectAllowed = "move";
+        });
+
+        card.addEventListener("dragend", () => {
+            card.classList.remove("drag-arrastando");
+            lista.querySelectorAll(".drag-sobre").forEach(c => c.classList.remove("drag-sobre"));
+            cardArrastando = null;
+            _verificarMudancaOrdem();
+        });
+
+        card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            if (!cardArrastando || cardArrastando === card) return;
+            lista.querySelectorAll(".drag-sobre").forEach(c => c.classList.remove("drag-sobre"));
+            card.classList.add("drag-sobre");
+        });
+
+        card.addEventListener("dragleave", () => {
+            card.classList.remove("drag-sobre");
+        });
+
+        card.addEventListener("drop", (e) => {
+            e.preventDefault();
+            if (!cardArrastando || cardArrastando === card) return;
+            card.classList.remove("drag-sobre");
+            const rect = card.getBoundingClientRect();
+            const metade = rect.top + rect.height / 2;
+            if (e.clientY < metade) {
+                lista.insertBefore(cardArrastando, card);
+            } else {
+                lista.insertBefore(cardArrastando, card.nextSibling);
+            }
+        });
+    });
+}
+
+function _verificarMudancaOrdem() {
+    const lista = document.getElementById("listaPacientes");
+    const btn = document.getElementById("btnSolicitarReordenacao");
+    if (!lista || !btn) return;
+
+    const sidsDOM = [...lista.querySelectorAll("[data-sid]")].map(c => c.dataset.sid);
+    const sidsOriginal = pacientesFiltrados.map(p => String(p.solicitacao_id));
+
+    const mudou = sidsDOM.some((sid, i) => sid !== sidsOriginal[i]);
+    _ordemArrastada = mudou ? sidsDOM : null;
+    btn.style.display = mudou ? "flex" : "none";
+}
+
+function _abrirModalSolicitacao() {
+    document.getElementById("txtJustificativa").value = "";
+    document.getElementById("msgModal").style.display = "none";
+    document.getElementById("modalJustificativa").style.display = "flex";
+    document.getElementById("txtJustificativa").focus();
+}
+
+function _fecharModal() {
+    document.getElementById("modalJustificativa").style.display = "none";
+}
+
+async function enviarSolicitacao() {
+    const justificativa = document.getElementById("txtJustificativa").value.trim();
+    const msgEl = document.getElementById("msgModal");
+    const btnConfirmar = document.getElementById("btnConfirmarModal");
+
+    if (!justificativa) {
+        msgEl.textContent = "A justificativa é obrigatória.";
+        msgEl.style.display = "block";
+        return;
+    }
+
+    const lista = document.getElementById("listaPacientes");
+    const nova_ordem = [...lista.querySelectorAll("[data-sid]")].map(c => c.dataset.sid);
+
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = "Enviando...";
+    msgEl.style.display = "none";
+
+    try {
+        const resp = await fetch("/api/solicitacoes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nova_ordem, justificativa }),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Erro ao enviar solicitação.");
+        }
+
+        _fecharModal();
+        _ordemArrastada = null;
+        renderizarTodos();
+        document.getElementById("btnSolicitarReordenacao").style.display = "none";
+        _mostrarToast("Solicitação enviada com sucesso!");
+    } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.style.display = "block";
+    } finally {
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = "Confirmar";
+    }
+}
+
+function _mostrarToast(texto) {
+    const toast = document.getElementById("toast");
+    if (!toast) return;
+    toast.textContent = texto;
+    toast.classList.add("toast-visivel");
+    setTimeout(() => toast.classList.remove("toast-visivel"), 3000);
 }
 
 // Pesquisa
@@ -388,6 +513,16 @@ document.getElementById("pesquisaPaciente")?.addEventListener("input", (e) => {
         (p.especialidade || "").toLowerCase().includes(termo)
     );
     renderizarTodos();
+});
+
+// Solicitar reordenação
+document.getElementById("btnSolicitarReordenacao")?.addEventListener("click", _abrirModalSolicitacao);
+
+// Modal
+document.getElementById("btnConfirmarModal")?.addEventListener("click", enviarSolicitacao);
+document.getElementById("btnCancelarModal")?.addEventListener("click", _fecharModal);
+document.getElementById("modalJustificativa")?.addEventListener("click", (e) => {
+    if (e.target === document.getElementById("modalJustificativa")) _fecharModal();
 });
 
 document.addEventListener("DOMContentLoaded", carregarFila);
