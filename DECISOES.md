@@ -4,7 +4,7 @@
 
 **Score explicável com framework clínico SWALIS + equidade temporal**
 
-Optamos por um motor de score composto, onde a classe clínica domina a ordenação e dimensões secundárias refinam o posicionamento dentro de cada classe. A fila é recalculada a cada upload de dados — sem IA negra, sem caixa-preta.
+Optamos por um motor de score composto, onde a classe clínica domina a ordenação e dimensões secundárias refinam o posicionamento dentro de cada classe. A fila é recalculada a cada upload de dados.
 
 ---
 
