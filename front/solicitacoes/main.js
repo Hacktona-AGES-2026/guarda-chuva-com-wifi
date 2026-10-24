@@ -28,8 +28,8 @@ function renderizarLista() {
         card.innerHTML = `
             <div class="sol-card-header">
                 <span class="sol-id">#${s.id}</span>
-                <span class="sol-badge ${s.status === "aprovada" ? "badge-aprovada" : "badge-pendente"}">
-                    ${s.status === "aprovada" ? "Aprovada" : "Pendente"}
+                <span class="sol-badge ${s.status === "aprovada" ? "badge-aprovada" : s.status === "rejeitada" ? "badge-rejeitada" : "badge-pendente"}">
+                    ${s.status === "aprovada" ? "Aprovada" : s.status === "rejeitada" ? "Rejeitada" : "Pendente"}
                 </span>
             </div>
             <p class="sol-data">${s.timestamp}</p>
@@ -108,14 +108,19 @@ async function exibirDetalhes(id) {
         }).join("");
 
         const btnAprovar = s.status === "pendente"
-            ? `<button class="btn-aprovar" id="btnAprovar">Aprovar Solicitação</button>`
+            ? `<div class="acoes-solicitacao">
+                   <button class="btn-aprovar" id="btnAprovar">Aprovar Solicitação</button>
+                   <button class="btn-rejeitar" id="btnRejeitar">Rejeitar</button>
+               </div>`
+            : s.status === "rejeitada"
+            ? `<p class="sol-rejeitada-msg">Esta solicitação foi rejeitada.</p>`
             : `<p class="sol-aprovada-msg">Esta solicitação já foi aprovada e a fila foi reordenada.</p>`;
 
         painel.innerHTML = `
             <div class="detalhe-header">
                 <span class="sol-id">Solicitação #${s.id}</span>
-                <span class="sol-badge ${s.status === "aprovada" ? "badge-aprovada" : "badge-pendente"}">
-                    ${s.status === "aprovada" ? "Aprovada" : "Pendente"}
+                <span class="sol-badge ${s.status === "aprovada" ? "badge-aprovada" : s.status === "rejeitada" ? "badge-rejeitada" : "badge-pendente"}">
+                    ${s.status === "aprovada" ? "Aprovada" : s.status === "rejeitada" ? "Rejeitada" : "Pendente"}
                 </span>
             </div>
             <p class="detalhe-data">${s.timestamp}</p>
@@ -133,6 +138,7 @@ async function exibirDetalhes(id) {
 
         if (s.status === "pendente") {
             document.getElementById("btnAprovar").addEventListener("click", () => aprovarSolicitacao(s.id));
+            document.getElementById("btnRejeitar").addEventListener("click", () => rejeitarSolicitacao(s.id));
         }
     } catch {
         painel.innerHTML = `<p class="placeholder">Erro ao carregar detalhes.</p>`;
@@ -158,6 +164,28 @@ async function aprovarSolicitacao(id) {
         msg.style.display = "block";
         btn.disabled = false;
         btn.textContent = "Aprovar Solicitação";
+    }
+}
+
+async function rejeitarSolicitacao(id) {
+    const btn = document.getElementById("btnRejeitar");
+    const msg = document.getElementById("msgAprovar");
+    btn.disabled = true;
+    btn.textContent = "Rejeitando...";
+
+    try {
+        const resp = await fetch(`/api/solicitacoes/${id}/rejeitar`, { method: "POST" });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Erro ao rejeitar.");
+        }
+        await carregarSolicitacoes();
+        exibirDetalhes(id);
+    } catch (err) {
+        msg.textContent = err.message;
+        msg.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Rejeitar";
     }
 }
 

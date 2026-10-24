@@ -451,6 +451,17 @@ def aprovar_solicitacao(sol_id: int):
     return JSONResponse(sol)
 
 
+@app.post("/api/solicitacoes/{sol_id}/rejeitar")
+def rejeitar_solicitacao(sol_id: int):
+    sol = next((s for s in _solicitacoes if s["id"] == sol_id), None)
+    if sol is None:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+    if sol["status"] != "pendente":
+        raise HTTPException(status_code=409, detail=f"Solicitação já {sol['status']}.")
+    sol["status"] = "rejeitada"
+    return JSONResponse(sol)
+
+
 @app.get("/api/exportar/completo")
 def exportar_completo():
     if _estado["fila"] is None:
