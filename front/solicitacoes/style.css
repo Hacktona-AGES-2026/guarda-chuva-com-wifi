@@ -351,7 +351,6 @@ main {
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s, opacity 0.2s;
-    margin-bottom: 8px;
 }
 
 .btn-aprovar:hover {
