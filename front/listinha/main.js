@@ -528,17 +528,14 @@ document.getElementById("pesquisaPaciente")?.addEventListener("input", (e) => {
     renderizarTodos();
 });
 
-// Solicitar reordenação
-document.getElementById("btnSolicitarReordenacao")?.addEventListener("click", _abrirModalSolicitacao);
-
-// Modal
-document.getElementById("btnConfirmarModal")?.addEventListener("click", enviarSolicitacao);
-document.getElementById("btnCancelarModal")?.addEventListener("click", _fecharModal);
-document.getElementById("modalJustificativa")?.addEventListener("click", (e) => {
-    if (e.target === document.getElementById("modalJustificativa")) _fecharModal();
-});
-
 document.addEventListener("DOMContentLoaded", () => {
     _configurarDragDrop();
     carregarFila();
+
+    document.getElementById("btnSolicitarReordenacao")?.addEventListener("click", _abrirModalSolicitacao);
+    document.getElementById("btnConfirmarModal")?.addEventListener("click", enviarSolicitacao);
+    document.getElementById("btnCancelarModal")?.addEventListener("click", _fecharModal);
+    document.getElementById("modalJustificativa")?.addEventListener("click", (e) => {
+        if (e.target === document.getElementById("modalJustificativa")) _fecharModal();
+    });
 });
