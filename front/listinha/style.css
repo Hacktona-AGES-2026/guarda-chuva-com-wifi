@@ -617,6 +617,10 @@ main {
     transition: background 0.2s;
     width: 100%;
     justify-content: center;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
 }
 
 .btn-solicitar-reordenacao:hover {

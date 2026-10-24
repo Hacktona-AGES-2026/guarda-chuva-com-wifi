@@ -380,53 +380,66 @@ function renderizarTodos() {
         card.addEventListener("click", () => exibirDetalhesPaciente(p));
         lista.appendChild(card);
     });
-
-    _configurarDragDrop();
 }
+
+let _dragConfigured = false;
 
 function _configurarDragDrop() {
     const lista = document.getElementById("listaPacientes");
-    if (!lista) return;
-    let cardArrastando = null;
+    if (!lista || _dragConfigured) return;
+    _dragConfigured = true;
 
-    lista.querySelectorAll("[data-sid]").forEach(card => {
-        card.addEventListener("dragstart", (e) => {
-            cardArrastando = card;
-            card.classList.add("drag-arrastando");
-            e.dataTransfer.effectAllowed = "move";
-        });
+    let sidArrastando = null;
 
-        card.addEventListener("dragend", () => {
-            card.classList.remove("drag-arrastando");
-            lista.querySelectorAll(".drag-sobre").forEach(c => c.classList.remove("drag-sobre"));
-            cardArrastando = null;
-            _verificarMudancaOrdem();
-        });
+    lista.addEventListener("dragstart", (e) => {
+        const card = e.target.closest("[data-sid]");
+        if (!card) return;
+        sidArrastando = card.dataset.sid;
+        card.classList.add("drag-arrastando");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", sidArrastando);
+    }, { capture: false });
 
-        card.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            if (!cardArrastando || cardArrastando === card) return;
-            lista.querySelectorAll(".drag-sobre").forEach(c => c.classList.remove("drag-sobre"));
-            card.classList.add("drag-sobre");
-        });
+    lista.addEventListener("dragend", (e) => {
+        const card = e.target.closest("[data-sid]");
+        if (card) card.classList.remove("drag-arrastando");
+        lista.querySelectorAll(".drag-sobre").forEach(c => c.classList.remove("drag-sobre"));
+        sidArrastando = null;
+        _verificarMudancaOrdem();
+    }, { capture: false });
 
-        card.addEventListener("dragleave", () => {
-            card.classList.remove("drag-sobre");
-        });
+    lista.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const card = e.target.closest("[data-sid]");
+        if (!card || card.dataset.sid === sidArrastando) return;
+        lista.querySelectorAll(".drag-sobre").forEach(c => c.classList.remove("drag-sobre"));
+        card.classList.add("drag-sobre");
+        e.dataTransfer.dropEffect = "move";
+    }, { capture: false });
 
-        card.addEventListener("drop", (e) => {
-            e.preventDefault();
-            if (!cardArrastando || cardArrastando === card) return;
-            card.classList.remove("drag-sobre");
-            const rect = card.getBoundingClientRect();
-            const metade = rect.top + rect.height / 2;
-            if (e.clientY < metade) {
-                lista.insertBefore(cardArrastando, card);
-            } else {
-                lista.insertBefore(cardArrastando, card.nextSibling);
-            }
-        });
-    });
+    lista.addEventListener("dragleave", (e) => {
+        const card = e.target.closest("[data-sid]");
+        if (!card) return;
+        if (!card.contains(e.relatedTarget)) card.classList.remove("drag-sobre");
+    }, { capture: false });
+
+    lista.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const alvo = e.target.closest("[data-sid]");
+        if (!alvo || alvo.dataset.sid === sidArrastando) return;
+        alvo.classList.remove("drag-sobre");
+
+        const cardMovendo = lista.querySelector(`[data-sid="${sidArrastando}"]`);
+        if (!cardMovendo) return;
+
+        const rect = alvo.getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+            lista.insertBefore(cardMovendo, alvo);
+        } else {
+            lista.insertBefore(cardMovendo, alvo.nextSibling);
+        }
+        _verificarMudancaOrdem();
+    }, { capture: false });
 }
 
 function _verificarMudancaOrdem() {
@@ -525,4 +538,7 @@ document.getElementById("modalJustificativa")?.addEventListener("click", (e) => 
     if (e.target === document.getElementById("modalJustificativa")) _fecharModal();
 });
 
-document.addEventListener("DOMContentLoaded", carregarFila);
+document.addEventListener("DOMContentLoaded", () => {
+    _configurarDragDrop();
+    carregarFila();
+});
