@@ -10,13 +10,26 @@
 
 <body>
     <header>
-        <img src="/mainIcon.svg" alt="Ícone Principal">
-        <ul>
-            <li><a href="/upload">Upload</a></li>
-            <li><a href="/dashboard">Dashboard</a></li>
-            <li><a href="/listinha">Fila</a></li>
-            <li><a href="#">Sobre</a></li>
-        </ul>
+        <div class="header-marca">
+            <img src="/mainIcon.svg" alt="Ícone Principal">
+            <div class="header-titulo">
+                <span class="header-nome">Guarda-chuva</span>
+                <span class="header-sub">Priorização Cirúrgica</span>
+            </div>
+        </div>
+        <nav class="header-nav">
+            <a href="/dashboard" class="nav-link ativo">Dashboard</a>
+            <span class="nav-sep"></span>
+            <a href="/listinha" class="nav-link">Fila</a>
+            <span class="nav-sep"></span>
+            <a href="/exportar" class="nav-link">Exportar</a>
+        </nav>
+        <button class="btn-reiniciar" title="Novo upload" onclick="window.location.href='/upload'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+            </svg>
+        </button>
     </header>
 
     <main>
@@ -26,12 +39,6 @@
                     <h2>Gravidades</h2>
                     <p>A1 A2 C D E</p>
                 </div>
-                <button class="botao-acao" aria-label="Mais opções">
-                    <svg class="icone-seta" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                </button>
             </div>
 
             <div class="nomesGraficoPizza">
@@ -45,8 +52,25 @@
 
         <div class="secaoPacientes">
             <h2 class="titulo-pacientes">NÚMERO PACIENTES: <span id="totalPacientes">0</span></h2>
-            
-            <div id="listaBarrasPacientes" class="lista-barras">
+            <div id="listaBarrasPacientes" class="lista-barras"></div>
+        </div>
+
+        <div class="card-tempo">
+            <h2 class="card-titulo">Tempo médio de espera por class (Mockado)</h2>
+            <p class="card-sub">Dias até cirurgia — antes vs. após priorização</p>
+            <div class="tempo-lista" id="tempoLista"></div>
+        </div>
+
+        <div class="card-acuracia">
+            <h2 class="card-titulo">Indicadores do Pipeline</h2>
+            <p class="card-sub">Métricas reais do processamento atual</p>
+            <div class="kpi-grid" id="kpiGrid"></div>
+            <div class="acuracia-barra-wrap">
+                <span class="acuracia-label">Acurácia geral</span>
+                <div class="acuracia-trilho">
+                    <div class="acuracia-fill" id="acuraciaFill"></div>
+                </div>
+                <span class="acuracia-valor" id="acuraciaValor"></span>
             </div>
         </div>
     </main>

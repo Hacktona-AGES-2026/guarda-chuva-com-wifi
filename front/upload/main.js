@@ -30,6 +30,7 @@ document.getElementById("formUpload").addEventListener("submit", async (e) => {
         }
 
         mostrarStatus(`Pronto! ${dados.total} pacientes priorizados. Redirecionando...`, "sucesso");
+        localStorage.setItem("fila_processada", "1");
         setTimeout(() => { window.location.href = "/dashboard"; }, 1500);
 
     } catch (err) {

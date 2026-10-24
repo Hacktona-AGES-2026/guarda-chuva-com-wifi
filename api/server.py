@@ -24,7 +24,7 @@ import tempfile
 import pandas as pd
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 # Adiciona src/ ao path para importar os módulos do pipeline
@@ -79,12 +79,38 @@ def _calcular_stats(fila: pd.DataFrame) -> dict:
     dist_esp    = df["especialidade"].value_counts().to_dict()
     onco        = int(df["oncologico"].sum())
     piora_rec   = int((df["piora_recente_count"] > 0).sum())
+    total       = len(df)
+
+    # Métricas reais do pipeline
+    alem_prazo      = int((df["score_equidade"] > 0).sum())
+    sem_urgencia    = int(df["sem_urgencia"].sum()) if "sem_urgencia" in df.columns else 0
+    # Regra de ouro: nenhum oncológico abaixo do primeiro sem_urgencia
+    regra_ouro_ok   = True
+    if "sem_urgencia" in df.columns and df["sem_urgencia"].any() and df["oncologico"].any():
+        pos_primeiro_calmo = df.loc[df["sem_urgencia"], "posicao"].min()
+        violacoes = int((df["oncologico"] & (df["posicao"] > pos_primeiro_calmo)).sum())
+        regra_ouro_ok = violacoes == 0
+    score_medio_por_classe = (
+        df.groupby("classe_swalis")["score_final"].mean().round(1).to_dict()
+    )
+
     return {
-        "total": len(df),
+        "total": total,
         "por_classe": dist_classe,
         "por_especialidade": dist_esp,
         "oncologicos": onco,
         "com_piora_recente": piora_rec,
+        "modelo": {
+            "total_classificados": total,
+            "oncologicos_detectados": onco,
+            "pct_oncologicos": round(onco / total * 100, 1) if total else 0,
+            "com_piora_recente": piora_rec,
+            "pct_piora": round(piora_rec / total * 100, 1) if total else 0,
+            "alem_prazo_classe": alem_prazo,
+            "pct_alem_prazo": round(alem_prazo / total * 100, 1) if total else 0,
+            "regra_ouro_ok": regra_ouro_ok,
+            "score_medio_por_classe": score_medio_por_classe,
+        },
     }
 
 
@@ -138,6 +164,32 @@ def get_stats():
     if _estado["stats"] is None:
         raise HTTPException(status_code=404, detail="Nenhum dado processado ainda. Faça upload dos CSVs.")
     return JSONResponse(_estado["stats"])
+
+
+@app.get("/api/exportar/completo")
+def exportar_completo():
+    if _estado["fila"] is None:
+        raise HTTPException(status_code=404, detail="Nenhum dado processado ainda.")
+    df = pd.DataFrame(_estado["fila"])
+    csv = df.to_csv(index=False)
+    return StreamingResponse(
+        io.StringIO(csv),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=fila_priorizada_completo.csv"},
+    )
+
+
+@app.get("/api/exportar/entrega")
+def exportar_entrega():
+    if _estado["fila"] is None:
+        raise HTTPException(status_code=404, detail="Nenhum dado processado ainda.")
+    df = pd.DataFrame(_estado["fila"])[["solicitacao_id", "posicao", "justificativa"]]
+    csv = df.to_csv(index=False)
+    return StreamingResponse(
+        io.StringIO(csv),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=fila_priorizada_entrega.csv"},
+    )
 
 
 # ── Servir front estático ────────────────────────────────────────────────────

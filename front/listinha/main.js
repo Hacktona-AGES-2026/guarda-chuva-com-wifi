@@ -14,7 +14,7 @@ async function carregarFila() {
         const resp = await fetch("/api/fila");
 
         if (resp.status === 404) {
-            mostrarEstadoVazio();
+            window.location.replace("/upload");
             return;
         }
         if (!resp.ok) throw new Error("Erro ao buscar dados da API.");
@@ -103,7 +103,7 @@ function renderizarTodos() {
     pacientesFiltrados.forEach((p) => {
         const cor = COR_CLASSE[p.classe_swalis] || "#999";
         const card = document.createElement("div");
-        card.className = "paciente-card";
+        card.className = "paciente-card paciente-card-clicavel";
         card.style.borderLeftColor = cor;
         card.innerHTML = `
             <h3>${p.posicao}. ${p.nome_paciente} — ${p.solicitacao_id}</h3>
@@ -111,6 +111,7 @@ function renderizarTodos() {
                &nbsp;|&nbsp; <strong>Classe:</strong> <span style="color:${cor}">${p.classe_swalis}</span>
                &nbsp;|&nbsp; <strong>Dias em fila:</strong> ${p.dias_em_fila}</p>
         `;
+        card.addEventListener("click", () => exibirDetalhesPaciente(p));
         lista.appendChild(card);
     });
 }
