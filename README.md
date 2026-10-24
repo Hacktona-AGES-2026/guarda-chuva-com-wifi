@@ -28,8 +28,10 @@ api/
 
 front/
   upload/                  ← tela de upload dos três CSVs
-  listinha/                ← fila priorizada em tabela
+  listinha/                ← fila priorizada com drag-and-drop e painel de detalhes
   dashboard/               ← estatísticas e distribuição por classe/especialidade
+  exportar/                ← download da fila em CSV
+  solicitacoes/            ← gerenciamento de solicitações de reordenação manual
 
 output/
   fila_priorizada.csv
@@ -70,6 +72,36 @@ python src/priorizar.py --dataset outra/pasta
 **Saídas geradas:**
 - `output/fila_priorizada.csv` — lista única ordenada com `posicao`, `score_final` e `justificativa`
 - `output/por_especialidade/<nome>.csv` — uma fila por especialidade com scores detalhados
+
+---
+
+## Funcionalidades da interface
+
+### `/listinha` — Fila priorizada
+
+- Lista completa de pacientes ordenada por score, com busca por nome/ID/especialidade
+- **Painel de detalhes** ao clicar num paciente: dados clínicos, localização via IBGE, histórico de alterações
+- **Edição de dados clínicos**: classe SWALIS (com justificativa obrigatória ao alterar), especialidade, procedimento e CID (com lookup automático de descrição)
+- **Reordenação manual via drag-and-drop**:
+  - Arrastar 1 posição: aplica imediatamente sem confirmação
+  - Arrastar mais de 1 posição: exige justificativa e cria uma solicitação pendente na página `/solicitacoes`
+- **Disparo de contato por SMS** (simulado): mensagem padronizada SUS ≤ 160 chars sem acentos, limite de 3 tentativas por paciente, histórico de disparos com timestamps
+- **Remoção de paciente**: seleção de motivo (já atendido / óbito / desistência) com confirmação pelo primeiro nome do paciente
+
+### `/solicitacoes` — Solicitações de reordenação
+
+- Lista de todas as solicitações com filtro por status (Todas / Pendentes / Aprovadas / Rejeitadas)
+- Painel de detalhes: justificativa, posição anterior e nova do paciente movido, dados clínicos completos e histórico de alterações
+- Ações: **Aprovar** (reordena a fila permanentemente) ou **Rejeitar**
+
+### `/dashboard` — Estatísticas
+
+- Distribuição por classe SWALIS e especialidade
+- Total de pacientes, oncológicos e com piora recente
+
+### `/exportar` — Exportação
+
+- Download da fila atual em CSV, refletindo reordenações aprovadas e edições realizadas
 
 ---
 
@@ -138,13 +170,21 @@ Pacientes detectados como desistência recebem `score = -999` e vão para o fim 
 
 ## API REST
 
-O servidor expõe três endpoints além do front-end estático:
-
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | `POST` | `/processar` | Recebe os 3 CSVs, roda o pipeline, armazena resultado em memória |
 | `GET`  | `/api/fila`  | Retorna a fila priorizada em JSON |
 | `GET`  | `/api/stats` | Retorna estatísticas (total, por classe, por especialidade, oncológicos, pioras) |
+| `POST` | `/api/fila/{id}/editar` | Edita dados clínicos de um paciente e recalcula score |
+| `POST` | `/api/fila/{id}/remover` | Remove paciente da fila (motivo obrigatório) |
+| `GET`  | `/api/fila/{id}/historico` | Retorna histórico de alterações do paciente |
+| `POST` | `/api/fila/{id}/disparar-sms` | Simula disparo de SMS de contato (máx 3 tentativas) |
+| `GET`  | `/api/fila/{id}/disparos-sms` | Retorna histórico de disparos SMS do paciente |
+| `POST` | `/api/solicitacoes` | Cria solicitação de reordenação manual |
+| `GET`  | `/api/solicitacoes` | Lista todas as solicitações |
+| `GET`  | `/api/solicitacoes/{id}` | Detalhes de uma solicitação (com dados clínicos enriquecidos) |
+| `POST` | `/api/solicitacoes/{id}/aprovar` | Aprova a reordenação e aplica à fila |
+| `POST` | `/api/solicitacoes/{id}/rejeitar` | Rejeita a solicitação |
 
 ---
 
