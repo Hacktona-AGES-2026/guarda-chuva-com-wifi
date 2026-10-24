@@ -52,12 +52,12 @@ async function exibirDetalhes(id) {
         renderizarLista();
 
         const itens = s.nova_ordem_detalhada.map(item => {
-            const moveu = item.posicao_anterior !== item.posicao_nova;
+            const moveu = item.posicao_anterior != null && item.posicao_anterior !== item.posicao_nova;
             const seta = moveu
                 ? `<span class="pos-de">${item.posicao_anterior}º</span>
                    <span class="pos-seta">${item.posicao_nova < item.posicao_anterior ? "↑" : "↓"}</span>
                    <span class="pos-para">${item.posicao_nova}º</span>`
-                : `<span class="pos-igual">${item.posicao_nova}º</span>`;
+                : `<span class="pos-igual">${item.posicao_nova != null ? item.posicao_nova + "º" : "—"}</span>`;
 
             const historico = item.historico && item.historico.length
                 ? item.historico.slice().reverse().map(r => {
