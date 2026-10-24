@@ -1,0 +1,214 @@
+* {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: aliceblue;
+    text-transform: uppercase;
+    font-weight: bold;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* HEADER */
+
+header {
+    height: 100px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 8px solid #d15847;
+}
+
+header img {
+    width: 50px;
+}
+
+header ul {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+header ul li a {
+    color: #333333;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+header ul li a:hover {
+    color: #d15847;
+}
+
+/* MAIN */
+
+main {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: min-content 1fr;
+    height: calc(100vh - 100px);
+    padding: 20px;
+    gap: 20px;
+}
+
+/* CARD 1: GRÁFICO DE PIZZA */
+
+.graficoPizza {
+    grid-column: span 1;
+    background-color: #ffffff;
+    color: #000000;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden; 
+    height: 100%;
+}
+
+.titulosGraficoPizza {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.titulosGraficoPizza h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.titulosGraficoPizza p {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.titulosGraficoPizza .botao-acao {
+    background-color: #f3f4f6;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.titulosGraficoPizza svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    stroke: #374151;
+}
+
+.nomesGraficoPizza {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.canvas-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.legenda-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.legend-text {
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+/* CARD 2: BARRAS HORIZONTAIS DE PACIENTES */
+
+.secaoPacientes {
+    grid-column: span 1;
+    background-color: #FFF;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+}
+
+.titulo-pacientes {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: #000000;
+    letter-spacing: -0.025em;
+}
+
+.lista-barras {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.linha-paciente {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.1rem;
+}
+
+.rotulo-categoria {
+    width: 45px;
+    font-weight: 800;
+    color: #000000;
+}
+
+.trilho-barra {
+    flex: 1;
+    height: 18px;
+    background-color: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.preenchimento-barra {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s ease-out;
+}
+
+.valor-pacientes {
+    min-width: 35px;
+    font-weight: 800;
+    color: #000000;
+    text-align: right;
+}

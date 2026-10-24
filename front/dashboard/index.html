@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Pacientes</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <header>
+        <img src="/mainIcon.svg" alt="Ícone Principal">
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/listinha">Fila</a></li>
+            <li><a href="#">Sobre</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <div class="graficoPizza">
+            <div class="titulosGraficoPizza">
+                <div>
+                    <h2>Gravidades</h2>
+                    <p>A1 A2 C D E</p>
+                </div>
+                <button class="botao-acao" aria-label="Mais opções">
+                    <svg class="icone-seta" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="nomesGraficoPizza">
+                <div class="canvas-container">
+                    <canvas id="salesChart"></canvas>
+                </div>
+                <div id="chartLegendContainer" class="legenda-container">
+                </div>
+            </div>
+        </div>
+
+        <div class="secaoPacientes">
+            <h2 class="titulo-pacientes">NÚMERO PACIENTES: <span id="totalPacientes">0</span></h2>
+            
+            <div id="listaBarrasPacientes" class="lista-barras">
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="./main.js"></script>
+</body>
+
+</html>

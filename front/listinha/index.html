@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guarda-chuva sem Wi-Fi</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <header>
+        <img src="/mainIcon.svg" alt="Ícone Principal">
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/listinha">Fila</a></li>
+            <li><a href="#">Sobre</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <div id="primeiros">
+            <h2>Primeiros da Fila</h2>
+            <div id="listaPrimeiros" class="lista-container"></div>
+        </div>
+
+        <div id="infosPaciente">
+            <h2>Detalhes do Paciente</h2>
+            <div id="detalhesConteudo" class="detalhes-conteudo">
+                <p class="placeholder">Selecione um paciente acima para ver os detalhes.</p>
+            </div>
+        </div>
+
+        <div id="todosPacientes">
+            <input id="pesquisaPaciente" type="text" placeholder="Nome">
+            <h2>Todos os Pacientes</h2>
+            <div id="listaPacientes" class="lista-pacientes"></div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="./main.js"></script>
+</body>
+
+</html>

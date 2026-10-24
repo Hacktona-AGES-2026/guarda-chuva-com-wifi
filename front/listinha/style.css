@@ -1,0 +1,180 @@
+* {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: aliceblue;
+    text-transform: uppercase;
+    font-weight: bold;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* HEADER */
+header {
+    height: 100px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 8px solid #d15847;
+}
+
+header img {
+    width: 50px;
+}
+
+header ul {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+header ul li a {
+    color: #333333;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+header ul li a:hover {
+    color: #d15847;
+}
+
+/* MAIN */
+main {
+    display: grid;
+    grid-template-rows: 1fr 1fr; 
+    grid-template-columns: 60% calc(40% - 20px);
+    height: calc(100vh - 100px);
+    padding: 20px;
+    gap: 20px;
+}
+
+#primeiros {
+    grid-row: 1;
+    grid-column: 1;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+#infosPaciente {
+    grid-row: 2;
+    grid-column: 1;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+#todosPacientes {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    overflow-y: auto;
+    gap: 10px;
+}
+
+#inputBusca {
+    border: 4px solid #000;
+    color: #000;
+    border-radius: 8px;
+    font-size: 1em;
+    padding: 4px 8px;
+}
+
+#primeiros h2, #infosPaciente h2, #todosPacientes h2 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.paciente-card-clicavel {
+    background-color: #f4f7f9;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border-left: 6px solid #d15847;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    margin-bottom: 8px;
+    text-transform: none;
+}
+
+.paciente-card-clicavel:hover {
+    background-color: #e2ecf2;
+    transform: translateX(2px);
+}
+
+.paciente-card-clicavel h3 {
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.paciente-card-clicavel p {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: normal;
+}
+
+.lista-pacientes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.paciente-card {
+    background-color: #f4f7f9;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 6px solid #d15847;
+    text-transform: none;
+    margin-bottom: 20px;
+}
+
+.paciente-card h3 {
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.paciente-card p {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: normal;
+}
+
+.detalhes-conteudo {
+    text-transform: none;
+}
+
+.detalhes-conteudo h3 {
+    text-transform: uppercase;
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.detalhes-conteudo p {
+    font-size: 0.85rem;
+    color: #555;
+    font-weight: normal;
+    margin-bottom: 6px;
+}
+
+.placeholder {
+    color: #888;
+    font-style: italic;
+}
