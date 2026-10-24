@@ -36,7 +36,15 @@
 
     <main>
         <div id="painelEsquerdo">
-            <h2>Solicitações de Reordenação</h2>
+            <div class="lista-topo">
+                <h2>Solicitações de Reordenação</h2>
+                <div class="filtro-tabs">
+                    <button class="filtro-tab ativo" data-status="todos">Todas</button>
+                    <button class="filtro-tab" data-status="pendente">Pendentes</button>
+                    <button class="filtro-tab" data-status="aprovada">Aprovadas</button>
+                    <button class="filtro-tab" data-status="rejeitada">Rejeitadas</button>
+                </div>
+            </div>
             <div id="listaSolicitacoes" class="lista-solicitacoes">
                 <p class="placeholder">Carregando...</p>
             </div>

@@ -1,5 +1,6 @@
 let solicitacoes = [];
 let solicitacaoAtiva = null;
+let _filtroAtivo = "todos";
 
 async function carregarSolicitacoes() {
     try {
@@ -15,13 +16,17 @@ async function carregarSolicitacoes() {
 
 function renderizarLista() {
     const lista = document.getElementById("listaSolicitacoes");
-    if (!solicitacoes.length) {
-        lista.innerHTML = `<p class="placeholder">Nenhuma solicitação registrada.</p>`;
+    const filtradas = _filtroAtivo === "todos"
+        ? solicitacoes
+        : solicitacoes.filter(s => s.status === _filtroAtivo);
+
+    if (!filtradas.length) {
+        lista.innerHTML = `<p class="placeholder">${solicitacoes.length ? "Nenhuma solicitação neste filtro." : "Nenhuma solicitação registrada."}</p>`;
         return;
     }
 
     lista.innerHTML = "";
-    solicitacoes.forEach((s) => {
+    filtradas.forEach((s) => {
         const card = document.createElement("div");
         const ativa = solicitacaoAtiva && solicitacaoAtiva.id === s.id;
         card.className = "sol-card" + (ativa ? " sol-card-ativa" : "");
@@ -189,4 +194,15 @@ async function rejeitarSolicitacao(id) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", carregarSolicitacoes);
+document.addEventListener("DOMContentLoaded", () => {
+    carregarSolicitacoes();
+
+    document.querySelectorAll(".filtro-tab").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".filtro-tab").forEach(b => b.classList.remove("ativo"));
+            btn.classList.add("ativo");
+            _filtroAtivo = btn.dataset.status;
+            renderizarLista();
+        });
+    });
+});

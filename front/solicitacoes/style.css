@@ -136,6 +136,44 @@ main {
     flex-shrink: 0;
 }
 
+.lista-topo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.filtro-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.filtro-tab {
+    background: none;
+    border: 1.5px solid #e0e0e0;
+    color: #666;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    font-family: inherit;
+}
+
+.filtro-tab:hover {
+    border-color: #d15847;
+    color: #d15847;
+}
+
+.filtro-tab.ativo {
+    background: #d15847;
+    border-color: #d15847;
+    color: #fff;
+}
+
 #painelDireito {
     background: #ffffff;
     border-radius: 8px;
