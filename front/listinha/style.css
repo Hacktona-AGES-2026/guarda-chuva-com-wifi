@@ -544,6 +544,11 @@ main {
     border-radius: 4px;
 }
 
+.historico-pos-drag {
+    color: #7c3aed;
+    background: #f5f3ff;
+}
+
 .historico-campo {
     display: grid;
     grid-template-columns: auto 1fr auto 1fr;

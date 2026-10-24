@@ -447,6 +447,31 @@ def aprovar_solicitacao(sol_id: int):
         df["posicao"] = df.index + 1
         _estado["fila_df"] = df
 
+    # Registra no histórico de cada paciente movido
+    pos_anterior = {str(p["solicitacao_id"]): p["posicao"] for p in fila_atual.values()}
+    movidos = sol.get("pacientes_movidos") or []
+    if not movidos:
+        movidos = [sid for sid in sol["nova_ordem"]
+                   if pos_anterior.get(sid) != sol["nova_ordem"].index(sid) + 1]
+    ts = datetime.now().strftime("%d/%m/%Y %H:%M")
+    for sid in movidos:
+        pos_ant = pos_anterior.get(sid)
+        pos_nov = sol["nova_ordem"].index(sid) + 1
+        if pos_ant == pos_nov:
+            continue
+        registro = {
+            "timestamp": ts,
+            "posicao_antes": pos_ant,
+            "posicao_depois": pos_nov,
+            "alteracoes": [{
+                "campo": "Posição na fila",
+                "de": str(pos_ant),
+                "para": str(pos_nov),
+            }],
+            "via": "reordenação",
+        }
+        _historico.setdefault(sid, []).append(registro)
+
     sol["status"] = "aprovada"
     return JSONResponse(sol)
 

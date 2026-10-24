@@ -328,7 +328,10 @@ async function buscarHistorico(solicitacaoId) {
         }
 
         const itens = registros.slice().reverse().map(r => {
-            const posStr = r.posicao_antes !== r.posicao_depois
+            const viaReordenacao = r.via === "reordenação";
+            const posStr = viaReordenacao
+                ? `<span class="historico-pos historico-pos-drag">↕ Reordenação manual</span>`
+                : r.posicao_antes !== r.posicao_depois
                 ? `<span class="historico-pos">Posição: ${r.posicao_antes} → ${r.posicao_depois}</span>`
                 : `<span class="historico-pos">Posição mantida: ${r.posicao_depois}</span>`;
             const campos = r.alteracoes.map(a =>
