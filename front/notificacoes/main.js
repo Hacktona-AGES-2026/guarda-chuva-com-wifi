@@ -2,161 +2,82 @@ const NOTIFICACOES = [
     {
         id: 1,
         lida: false,
-        tipo: "piora",
-        urgencia: "alta",
         timestamp: "24/10/2026 07:12",
         paciente: "Maria Aparecida Souza",
         solicitacao_id: "SOL-2023-00047",
         classe_atual: "B",
-        titulo: "Paciente relatou piora crítica",
+        titulo: "Paciente relatou piora e precisa de consulta urgente",
         resumo: "Respondeu opção 4 ao SMS — piorou e precisa de consulta urgente.",
-        resposta_sms: "4",
-        detalhes: "Maria respondeu ao contato via SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Ela está há 187 dias na fila, ultrapassando o prazo da classe B (60 dias). Recomenda-se reclassificação para A2 e contato imediato.",
-        acoes: ["reclassificar", "contatar"],
+        detalhes: "Maria respondeu ao contato via SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Está há 187 dias na fila, ultrapassando o prazo da classe B (60 dias). O caso deve ser reavaliado pelo regulador.",
     },
     {
         id: 2,
         lida: false,
-        tipo: "piora",
-        urgencia: "alta",
-        timestamp: "24/10/2026 06:48",
+        timestamp: "24/10/2026 06:03",
         paciente: "José Renato Figueiredo",
         solicitacao_id: "SOL-2022-00118",
         classe_atual: "C",
-        titulo: "Paciente foi ao pronto-socorro",
-        resumo: "Evento de pronto-socorro registrado ontem — 3º evento em 90 dias.",
-        resposta_sms: null,
-        detalhes: "José deu entrada no pronto-socorro na noite de 23/10/2026. É o terceiro evento de piora nos últimos 90 dias. Atualmente na classe C, aguardando há 312 dias. O padrão de recorrência sugere agravamento — reclassificação para B ou A2 deve ser avaliada.",
-        acoes: ["reclassificar"],
+        titulo: "Paciente relatou piora e precisa de consulta urgente",
+        resumo: "Respondeu opção 4 ao SMS — piorou e precisa de consulta urgente.",
+        detalhes: "José respondeu ao SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Está aguardando há 312 dias na classe C (prazo 180 dias). É o segundo contato relatando piora nos últimos 60 dias.",
     },
     {
         id: 3,
         lida: false,
-        tipo: "piora",
-        urgencia: "alta",
-        timestamp: "23/10/2026 22:31",
+        timestamp: "23/10/2026 22:45",
         paciente: "Ana Paula Rodrigues Lima",
         solicitacao_id: "SOL-2024-00203",
         classe_atual: "A2",
-        titulo: "Biópsia positiva confirmada",
-        resumo: "Resultado de biópsia recebido — carcinoma ductal confirmado.",
-        resposta_sms: null,
-        detalhes: "Biópsia realizada em 20/10/2026 retornou com resultado de carcinoma ductal invasivo. Ana Paula está atualmente na classe A2, aguardando há 43 dias (prazo: 21 dias). CID ainda registrado como D48.6 — recomenda-se atualização para CID C50 e reclassificação para A1.",
-        acoes: ["reclassificar"],
+        titulo: "Paciente relatou piora e precisa de consulta urgente",
+        resumo: "Respondeu opção 4 ao SMS — piorou e precisa de consulta urgente.",
+        detalhes: "Ana Paula respondeu ao SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Está na classe A2 há 43 dias (prazo: 21 dias já ultrapassado). Situação requer atenção prioritária.",
     },
     {
         id: 4,
         lida: false,
-        tipo: "resposta",
-        urgencia: "media",
-        timestamp: "23/10/2026 19:05",
-        paciente: "Carlos Eduardo Mendes",
-        solicitacao_id: "SOL-2023-00091",
-        classe_atual: "C",
-        titulo: "Paciente confirma necessidade de cirurgia",
-        resumo: "Respondeu opção 1 ao SMS — ainda precisa da cirurgia.",
-        resposta_sms: "1",
-        detalhes: "Carlos respondeu ao SMS de contato com a opção 1 (Ainda preciso). Está na fila há 241 dias, classe C (prazo 180 dias). Nenhuma ação clínica urgente necessária, mas o prazo já foi ultrapassado. Score de equidade em crescimento.",
-        acoes: [],
-    },
-    {
-        id: 5,
-        lida: false,
-        tipo: "resposta",
-        urgencia: "media",
-        timestamp: "23/10/2026 17:42",
+        timestamp: "23/10/2026 19:30",
         paciente: "Francisca Alves Nascimento",
         solicitacao_id: "SOL-2022-00334",
         classe_atual: "B",
-        titulo: "Paciente confirma necessidade de cirurgia",
-        resumo: "Respondeu opção 1 ao SMS — ainda precisa da cirurgia.",
-        resposta_sms: "1",
-        detalhes: "Francisca respondeu ao SMS com a opção 1 (Ainda preciso). Está aguardando há 198 dias na classe B (prazo 60 dias). Mais de 3× o prazo da sua classe. Equipe deve avaliar se há eventos de piora não registrados.",
-        acoes: [],
+        titulo: "Paciente relatou piora e precisa de consulta urgente",
+        resumo: "Respondeu opção 4 ao SMS — piorou e precisa de consulta urgente.",
+        detalhes: "Francisca respondeu ao SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Está na fila há 198 dias na classe B (prazo 60 dias). Mais de 3× o prazo da classe.",
+    },
+    {
+        id: 5,
+        lida: true,
+        timestamp: "23/10/2026 14:55",
+        paciente: "Antônio Carlos Pereira",
+        solicitacao_id: "SOL-2022-00678",
+        classe_atual: "B",
+        titulo: "Paciente relatou piora e precisa de consulta urgente",
+        resumo: "Respondeu opção 4 ao SMS — piorou e precisa de consulta urgente.",
+        detalhes: "Antônio respondeu ao SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Está na fila há 143 dias na classe B. Já possui registro de HbA1c 9,2% indicando diabetes descontrolado.",
     },
     {
         id: 6,
         lida: true,
-        tipo: "resposta",
-        urgencia: "baixa",
-        timestamp: "23/10/2026 14:20",
-        paciente: "Roberto Henrique Teixeira",
-        solicitacao_id: "SOL-2023-00512",
-        classe_atual: "D",
-        titulo: "Paciente informa que já foi operado",
-        resumo: "Respondeu opção 2 ao SMS — já realizou cirurgia em outro serviço.",
-        resposta_sms: "2",
-        detalhes: "Roberto respondeu ao SMS com a opção 2 (Já operei). Indica que a cirurgia foi realizada em outro serviço. Recomenda-se remoção da fila com motivo 'Já foi atendido' para liberar a vaga.",
-        acoes: ["remover"],
-    },
-    {
-        id: 7,
-        lida: true,
-        tipo: "resposta",
-        urgencia: "baixa",
-        timestamp: "23/10/2026 11:08",
+        timestamp: "22/10/2026 11:20",
         paciente: "Luciana Martins Borges",
         solicitacao_id: "SOL-2024-00089",
-        classe_atual: "D",
-        titulo: "Paciente desistiu da cirurgia",
-        resumo: "Respondeu opção 3 ao SMS — desistiu da cirurgia.",
-        resposta_sms: "3",
-        detalhes: "Luciana respondeu ao SMS com a opção 3 (Desisti). Recomenda-se remoção da fila com motivo 'Paciente desistiu'. A vaga pode ser realocada.",
-        acoes: ["remover"],
-    },
-    {
-        id: 8,
-        lida: true,
-        tipo: "piora",
-        urgencia: "media",
-        timestamp: "22/10/2026 20:15",
-        paciente: "Antônio Carlos Pereira",
-        solicitacao_id: "SOL-2022-00678",
-        classe_atual: "B",
-        titulo: "HbA1c elevada registrada",
-        resumo: "Última HbA1c: 9,2% — diabetes descontrolado para cirurgia eletiva.",
-        resposta_sms: null,
-        detalhes: "Novo registro de HbA1c de 9,2% em 21/10/2026. O limiar para cirurgia eletiva é 8,5%. Antônio está na fila há 143 dias na classe B. A descompensação diabética aumenta o risco cirúrgico (ASA 3) e pode exigir preparo pré-operatório adicional antes do agendamento.",
-        acoes: [],
+        classe_atual: "C",
+        titulo: "Paciente relatou piora e precisa de consulta urgente",
+        resumo: "Respondeu opção 4 ao SMS — piorou e precisa de consulta urgente.",
+        detalhes: "Luciana respondeu ao SMS com a opção 4 (Piorei, preciso de uma consulta urgente). Está aguardando há 220 dias na classe C (prazo 180 dias). Primeiro contato de piora registrado.",
     },
 ];
 
 let _filtroAtivo = "todas";
 let _notAtiva = null;
 
-function _urgenciaCor(u) {
-    if (u === "alta") return "not-urgencia-alta";
-    if (u === "media") return "not-urgencia-media";
-    return "not-urgencia-baixa";
-}
-
-function _urgenciaLabel(u) {
-    if (u === "alta") return "Urgente";
-    if (u === "media") return "Atenção";
-    return "Info";
-}
-
-function _tipoLabel(t) {
-    if (t === "piora") return "Piora clínica";
-    return "Resposta SMS";
-}
-
-function _respostaLabel(r) {
-    const map = { "1": "Ainda preciso", "2": "Já operei", "3": "Desisti", "4": "Piorei — consulta urgente" };
-    return map[r] || "—";
-}
-
 function renderizarLista() {
     const lista = document.getElementById("listaNot");
-    const filtradas = NOTIFICACOES.filter(n => {
-        if (_filtroAtivo === "nao-lida") return !n.lida;
-        if (_filtroAtivo === "piora") return n.tipo === "piora";
-        if (_filtroAtivo === "resposta") return n.tipo === "resposta";
-        return true;
-    });
+    const filtradas = _filtroAtivo === "nao-lida"
+        ? NOTIFICACOES.filter(n => !n.lida)
+        : NOTIFICACOES;
 
     if (!filtradas.length) {
-        lista.innerHTML = `<p class="placeholder">Nenhuma notificação neste filtro.</p>`;
+        lista.innerHTML = `<p class="placeholder">Nenhuma notificação.</p>`;
         return;
     }
 
@@ -166,8 +87,7 @@ function renderizarLista() {
         div.className = `not-card${_notAtiva === n.id ? " not-card-ativa" : ""}${n.lida ? " not-card-lida" : ""}`;
         div.innerHTML = `
             <div class="not-card-header">
-                <span class="not-urgencia ${_urgenciaCor(n.urgencia)}">${_urgenciaLabel(n.urgencia)}</span>
-                <span class="not-tipo">${_tipoLabel(n.tipo)}</span>
+                <span class="not-urgencia">Atenção</span>
                 ${!n.lida ? `<span class="not-bolinha"></span>` : ""}
             </div>
             <p class="not-titulo">${n.titulo}</p>
@@ -188,24 +108,10 @@ function exibirDetalhe(id) {
     renderizarLista();
     atualizarBadge();
 
-    const acoesBtns = n.acoes.map(a => {
-        if (a === "reclassificar") return `<button class="not-btn-acao not-btn-reclassificar">Reclassificar paciente</button>`;
-        if (a === "remover") return `<button class="not-btn-acao not-btn-remover">Remover da fila</button>`;
-        if (a === "contatar") return `<button class="not-btn-acao not-btn-contatar">Contatar paciente</button>`;
-        return "";
-    }).join("");
-
-    const respostaHtml = n.resposta_sms
-        ? `<div class="not-resposta-box">
-               <span class="not-resposta-label">Resposta do paciente ao SMS</span>
-               <p class="not-resposta-texto">Opção ${n.resposta_sms} — <strong>${_respostaLabel(n.resposta_sms)}</strong></p>
-           </div>`
-        : "";
-
     document.getElementById("detalheNot").innerHTML = `
         <div class="not-detalhe-header">
-            <span class="not-urgencia ${_urgenciaCor(n.urgencia)}">${_urgenciaLabel(n.urgencia)}</span>
-            <span class="not-tipo">${_tipoLabel(n.tipo)}</span>
+            <span class="not-urgencia">Atenção</span>
+            <span class="not-tipo">Resposta SMS — Opção 4</span>
         </div>
         <h3 class="not-detalhe-titulo">${n.titulo}</h3>
         <p class="not-detalhe-data">${n.timestamp}</p>
@@ -214,24 +120,14 @@ function exibirDetalhe(id) {
             <p class="not-paciente-nome">${n.paciente}</p>
             <p class="not-paciente-sub">${n.solicitacao_id} · Classe atual: <strong>${n.classe_atual}</strong></p>
         </div>
-        ${respostaHtml}
+        <div class="not-resposta-box">
+            <span class="not-resposta-label">Resposta do paciente ao SMS</span>
+            <p class="not-resposta-texto">Opção 4 — <strong>Piorei, preciso de uma consulta urgente</strong></p>
+        </div>
         <div class="not-descricao">
             <p>${n.detalhes}</p>
         </div>
-        ${acoesBtns
-            ? `<div class="not-acoes">${acoesBtns}</div>`
-            : `<p class="not-sem-acao">Nenhuma ação necessária — notificação informativa.</p>`}
     `;
-
-    document.querySelectorAll(".not-btn-reclassificar").forEach(btn =>
-        btn.addEventListener("click", () => { window.location.href = "/listinha"; })
-    );
-    document.querySelectorAll(".not-btn-remover").forEach(btn =>
-        btn.addEventListener("click", () => { window.location.href = "/listinha"; })
-    );
-    document.querySelectorAll(".not-btn-contatar").forEach(btn =>
-        btn.addEventListener("click", () => { window.location.href = "/listinha"; })
-    );
 }
 
 function atualizarBadge() {
