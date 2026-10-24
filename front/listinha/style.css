@@ -278,3 +278,55 @@ main {
     color: #888;
     font-style: italic;
 }
+
+/* LOCALIZAÇÃO VIA VIACEP */
+.localizacao-box {
+    margin-top: 4px;
+}
+
+.localizacao-titulo {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #d15847;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+}
+
+.localizacao-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    align-items: baseline;
+}
+
+.loc-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.loc-val {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #333;
+    text-transform: none;
+}
+
+.localizacao-loading {
+    font-size: 0.75rem;
+    color: #aaa;
+    font-style: italic;
+    font-weight: 400;
+    text-transform: none;
+}
+
+.localizacao-erro {
+    font-size: 0.75rem;
+    color: #f97316;
+    font-weight: 500;
+    text-transform: none;
+}

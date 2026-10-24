@@ -92,7 +92,43 @@ function exibirDetalhesPaciente(p) {
         <p><strong>Dias em fila:</strong> ${p.dias_em_fila}</p>
         <hr style="margin:10px 0; border-color:#eee">
         <p style="font-style:italic; font-weight:normal; text-transform:none; font-size:0.85rem">${p.justificativa}</p>
+        <hr style="margin:10px 0; border-color:#eee">
+        <div id="localizacaoBox" class="localizacao-box">
+            <span class="localizacao-loading">Buscando localização...</span>
+        </div>
     `;
+
+    buscarLocalizacao(p.municipio);
+}
+
+async function buscarLocalizacao(municipio) {
+    const box = document.getElementById("localizacaoBox");
+    if (!box || !municipio) return;
+
+    try {
+        const url = `https://servicodados.ibge.gov.br/api/v1/localidades/municipios?nome=${encodeURIComponent(municipio.trim())}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error("Sem resposta");
+
+        const dados = await resp.json();
+        if (!Array.isArray(dados) || dados.length === 0) throw new Error("Não encontrado");
+
+        const d = dados[0];
+        const uf    = d.microrregiao?.mesorregiao?.UF;
+        const regiao = uf?.regiao;
+
+        box.innerHTML = `
+            <p class="localizacao-titulo">Localização (IBGE)</p>
+            <div class="localizacao-grid">
+                <span class="loc-label">Município</span><span class="loc-val">${d.nome} — ${uf?.sigla || "—"}</span>
+                <span class="loc-label">Estado</span><span class="loc-val">${uf?.nome || "—"}</span>
+                <span class="loc-label">Região</span><span class="loc-val">${regiao?.nome || "—"}</span>
+                <span class="loc-label">Cód. IBGE</span><span class="loc-val">${d.id}</span>
+            </div>
+        `;
+    } catch {
+        box.innerHTML = `<span class="localizacao-erro">Localização não encontrada para "${municipio}"</span>`;
+    }
 }
 
 function renderizarTodos() {
