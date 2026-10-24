@@ -383,6 +383,7 @@ function renderizarTodos() {
 }
 
 let _dragConfigured = false;
+let _sidArrastado = null; // SID do card que foi arrastado nesta sessão de drag
 
 function _configurarDragDrop() {
     const lista = document.getElementById("listaPacientes");
@@ -395,6 +396,7 @@ function _configurarDragDrop() {
         const card = e.target.closest("[data-sid]");
         if (!card) return;
         sidArrastando = card.dataset.sid;
+        _sidArrastado = card.dataset.sid;
         card.classList.add("drag-arrastando");
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", sidArrastando);
@@ -451,8 +453,61 @@ function _verificarMudancaOrdem() {
     const sidsOriginal = pacientesFiltrados.map(p => String(p.solicitacao_id));
 
     const mudou = sidsDOM.some((sid, i) => sid !== sidsOriginal[i]);
-    _ordemArrastada = mudou ? sidsDOM : null;
-    btn.style.display = mudou ? "flex" : "none";
+    if (!mudou) {
+        _ordemArrastada = null;
+        btn.style.display = "none";
+        return;
+    }
+
+    _ordemArrastada = sidsDOM;
+
+    // Calcula quantas casas o paciente arrastado se moveu
+    const posOriginal = sidsOriginal.indexOf(_sidArrastado);
+    const posNova = sidsDOM.indexOf(_sidArrastado);
+    const delta = Math.abs(posNova - posOriginal);
+
+    if (delta <= 1) {
+        // Mudança pequena: aplica direto sem modal
+        _aplicarOrdemDireta(sidsDOM);
+        btn.style.display = "none";
+    } else {
+        btn.style.display = "flex";
+    }
+}
+
+async function _aplicarOrdemDireta(nova_ordem) {
+    try {
+        const resp = await fetch("/api/solicitacoes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                nova_ordem,
+                justificativa: "Ajuste de 1 posição (aplicado automaticamente)",
+                pacientes_movidos: _sidArrastado ? [_sidArrastado] : [],
+            }),
+        });
+        if (!resp.ok) throw new Error();
+        const sol = await resp.json();
+
+        // Aprova imediatamente
+        await fetch(`/api/solicitacoes/${sol.id}/aprovar`, { method: "POST" });
+
+        // Atualiza ordem local
+        pacientes.sort((a, b) => {
+            const ia = nova_ordem.indexOf(String(a.solicitacao_id));
+            const ib = nova_ordem.indexOf(String(b.solicitacao_id));
+            return ia - ib;
+        });
+        pacientes.forEach((p, i) => { p.posicao = i + 1; });
+        pacientesFiltrados = [...pacientes];
+
+        _ordemArrastada = null;
+        _sidArrastado = null;
+        renderizarTudo(false);
+        _mostrarToast("Ordem atualizada.");
+    } catch {
+        _mostrarToast("Erro ao aplicar reordenação.");
+    }
 }
 
 function _abrirModalSolicitacao() {
@@ -479,8 +534,7 @@ async function enviarSolicitacao() {
 
     const lista = document.getElementById("listaPacientes");
     const nova_ordem = [...lista.querySelectorAll("[data-sid]")].map(c => c.dataset.sid);
-    const sidsOriginal = pacientesFiltrados.map(p => String(p.solicitacao_id));
-    const pacientes_movidos = nova_ordem.filter((sid, i) => sid !== sidsOriginal[i]);
+    const pacientes_movidos = _sidArrastado ? [_sidArrastado] : [];
 
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = "Enviando...";
