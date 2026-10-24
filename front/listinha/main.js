@@ -236,6 +236,7 @@ async function salvarEdicao(pOriginal) {
         procedimento:  form.procedimento.value.trim(),
         cid_principal: cidPrincipal,
         cid_descricao: cidMudou ? cidDescricaoPreview : pOriginal.cid_descricao,
+        justificativa_swalis: classeMudou ? justificativaSwalis : undefined,
     };
 
     btnSalvar.disabled = true;
@@ -342,6 +343,12 @@ async function buscarHistorico(solicitacaoId) {
                     <span class="historico-para">${a.para || "—"}</span>
                 </div>`
             ).join("");
+            const justBox = r.justificativa_swalis
+                ? `<div class="historico-justificativa">
+                       <span class="historico-just-label">Justificativa SWALIS</span>
+                       <span class="historico-just-texto">${r.justificativa_swalis}</span>
+                   </div>`
+                : "";
             return `
                 <div class="historico-item">
                     <div class="historico-header">
@@ -349,6 +356,7 @@ async function buscarHistorico(solicitacaoId) {
                         ${posStr}
                     </div>
                     ${campos}
+                    ${justBox}
                 </div>
             `;
         }).join("");

@@ -209,6 +209,7 @@ class EdicaoPaciente(BaseModel):
     procedimento: Optional[str] = None
     cid_principal: Optional[str] = None
     cid_descricao: Optional[str] = None
+    justificativa_swalis: Optional[str] = None
 
 
 _CID_URGENTES = {"I200", "K403", "K400", "K420", "K430", "K800", "N132", "I832"}
@@ -286,6 +287,7 @@ def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
     posicao_antes = paciente_antes["posicao"] if paciente_antes else None
 
     campos = edicao.model_dump(exclude_none=True)
+    justificativa_swalis = campos.pop("justificativa_swalis", None)
 
     # Registra apenas os campos que de fato mudaram
     _LABELS = {
@@ -326,6 +328,8 @@ def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
             "posicao_depois": paciente["posicao"],
             "alteracoes": alteracoes,
         }
+        if justificativa_swalis:
+            registro["justificativa_swalis"] = justificativa_swalis
         _historico.setdefault(solicitacao_id, []).append(registro)
 
     return JSONResponse(paciente)

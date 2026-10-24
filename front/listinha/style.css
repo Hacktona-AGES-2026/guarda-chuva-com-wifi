@@ -587,6 +587,33 @@ main {
     word-break: break-word;
 }
 
+.historico-justificativa {
+    margin-top: 5px;
+    background: #fffbeb;
+    border-left: 2px solid #eab308;
+    padding: 4px 8px;
+    border-radius: 0 4px 4px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.historico-just-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #a16207;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.historico-just-texto {
+    font-size: 0.75rem;
+    color: #333;
+    font-weight: 400;
+    text-transform: none;
+    line-height: 1.4;
+}
+
 /* DRAG AND DROP */
 .paciente-card-clicavel[draggable="true"] {
     cursor: grab;
