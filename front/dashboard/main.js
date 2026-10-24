@@ -144,16 +144,16 @@ function renderizarAcuracia(modelo) {
     const regraOuro = modelo.regra_ouro_ok;
 
     const kpis = [
-        { label: "Classificados", valor: modelo.total_classificados, icone: "📋" },
-        { label: "Oncológicos",   valor: `${modelo.oncologicos_detectados} (${modelo.pct_oncologicos}%)`, icone: "🔬" },
-        { label: "Com piora",     valor: `${modelo.com_piora_recente} (${modelo.pct_piora}%)`, icone: "📈" },
-        { label: "Regra de ouro", valor: regraOuro ? "Respeitada" : "VIOLADA", icone: regraOuro ? "✅" : "❌" },
+        { label: "Classificados", valor: modelo.total_classificados, icone: "clipboard.png" },
+        { label: "Oncológicos",   valor: `${modelo.oncologicos_detectados} (${modelo.pct_oncologicos}%)`, icone: "microscope.png" },
+        { label: "Com piora",     valor: `${modelo.com_piora_recente} (${modelo.pct_piora}%)`, icone: "graph.png" },
+        { label: "Regra de ouro", valor: regraOuro ? "Respeitada" : "VIOLADA", icone: "check.png" },
     ];
 
     if (grid) {
         grid.innerHTML = kpis.map(k => `
             <div class="kpi-card">
-                <span class="kpi-icone">${k.icone}</span>
+                <img class="kpi-icone" src="/icons/${k.icone}" alt="">
                 <span class="kpi-valor" style="${k.label === 'Regra de ouro' ? `color:${regraOuro ? '#16a34a' : '#d15847'}` : ''}">${k.valor}</span>
                 <span class="kpi-label">${k.label}</span>
             </div>`).join("");

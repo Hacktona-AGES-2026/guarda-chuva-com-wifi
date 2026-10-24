@@ -256,7 +256,9 @@ main {
 }
 
 .kpi-icone {
-    font-size: 1.2rem;
+    width: 4rem;
+    height: 4rem;
+    object-fit: contain;
 }
 
 .kpi-valor {
