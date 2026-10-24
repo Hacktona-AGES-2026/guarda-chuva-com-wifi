@@ -17,27 +17,31 @@ Uso:
   python api/server.py
 """
 import io
+import mimetypes
 import os
+import re
 import sys
 import tempfile
+from typing import Optional
 
 import pandas as pd
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 # Adiciona src/ ao path para importar os módulos do pipeline
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from normalizar import carregar_fila, carregar_eventos, carregar_procedimentos, enriquecer_fila_com_eventos
-from classificar_swalis import classificar
-from coeficiente import calcular_coeficiente
+from classificar_swalis import classificar, CLASSE_SCORE, CLASSE_PRAZO
+from coeficiente import calcular_coeficiente, _score_equidade, _ajuste_risco, _penalidade_pre_op, _gerar_justificativa
 
 app = FastAPI(title="Priorização Cirúrgica")
 
 # Estado em memória — substituído a cada POST /processar
-_estado: dict = {"fila": None, "stats": None}
+_estado: dict = {"fila": None, "fila_df": None, "stats": None}
 
 FRONT_DIR = os.path.join(os.path.dirname(__file__), "..", "front")
 
@@ -146,8 +150,9 @@ async def processar(
         except Exception as e:
             raise HTTPException(status_code=422, detail=f"Erro no pipeline: {e}")
 
-        _estado["fila"]  = _fila_para_json(fila)
-        _estado["stats"] = _calcular_stats(fila)
+        _estado["fila"]    = _fila_para_json(fila)
+        _estado["fila_df"] = fila.copy()
+        _estado["stats"]   = _calcular_stats(fila)
 
     return {"ok": True, "total": _estado["stats"]["total"]}
 
@@ -164,6 +169,98 @@ def get_stats():
     if _estado["stats"] is None:
         raise HTTPException(status_code=404, detail="Nenhum dado processado ainda. Faça upload dos CSVs.")
     return JSONResponse(_estado["stats"])
+
+
+class EdicaoPaciente(BaseModel):
+    classe_swalis: Optional[str] = None
+    especialidade: Optional[str] = None
+    procedimento: Optional[str] = None
+    cid_principal: Optional[str] = None
+    cid_descricao: Optional[str] = None
+
+
+_CID_URGENTES = {"I200", "K403", "K400", "K420", "K430", "K800", "N132", "I832"}
+_KW_SEM_URGENCIA = re.compile(
+    r"encarcer|estrangul|colangite|icter|pancreatite|sepse|hidronefrose|"
+    r"perda ponderal|disfagia|hemoptise|sangramento espontaneo|acamad|"
+    r"crescimento rapido|retencao urinaria aguda|massa anexial",
+    re.IGNORECASE,
+)
+
+
+def _recalcular_fila(fila_df: pd.DataFrame) -> pd.DataFrame:
+    """Recalcula scores e reordena a fila completa após uma edição."""
+    df = fila_df.copy()
+
+    # Recalcula campos derivados do CID
+    df["cid_norm"] = df["cid_principal"].str.replace(".", "", regex=False).str.upper()
+    df["oncologico"] = df["cid_norm"].str.startswith("C", na=False)
+
+    # Recalcula score_classe a partir da classe_swalis
+    df["score_classe"] = df["classe_swalis"].map(CLASSE_SCORE).fillna(10)
+
+    # Recalcula scores individuais
+    df["score_equidade"]    = df.apply(_score_equidade, axis=1)
+    df["ajuste_risco"]      = df.apply(_ajuste_risco, axis=1)
+    df["penalidade_pre_op"] = df.apply(_penalidade_pre_op, axis=1)
+    df["justificativa"]     = df.apply(lambda r: _gerar_justificativa(r, None), axis=1)
+
+    agrav = df["score_agravamento"] if "score_agravamento" in df.columns else 0
+    df["score_final"] = (
+        df["score_classe"] + agrav + df["score_equidade"]
+        + df["ajuste_risco"] - df["penalidade_pre_op"]
+    )
+
+    # Regra de ouro
+    def _sem_urgencia(r):
+        if r.get("oncologico"): return False
+        if r.get("cid_norm", "") in _CID_URGENTES: return False
+        if r.get("piora_recente_count", 0) > 0: return False
+        if r.get("biopsia_positiva_count", 0) > 0: return False
+        txt = str(r.get("justificativa_clinica", "")) + " " + str(r.get("observacoes", ""))
+        if _KW_SEM_URGENCIA.search(txt): return False
+        if int(r.get("intensidade_dor_eva", 0)) > 3: return False
+        if str(r.get("limitacao_funcional", "nenhuma")).lower() not in ("nenhuma", "leve"): return False
+        return True
+
+    df["sem_urgencia"] = df.apply(_sem_urgencia, axis=1)
+    if df["sem_urgencia"].any() and df["oncologico"].any():
+        score_max_calmo = df.loc[df["sem_urgencia"], "score_final"].max()
+        mask = df["oncologico"] & (df["score_final"] <= score_max_calmo)
+        if mask.any():
+            df.loc[mask, "score_final"] = score_max_calmo + 1
+
+    df = df.sort_values(["score_final", "dias_em_fila"], ascending=[False, False])
+    df = df.reset_index(drop=True)
+    df["posicao"] = df.index + 1
+    return df
+
+
+@app.post("/api/fila/{solicitacao_id}/editar")
+def editar_paciente(solicitacao_id: str, edicao: EdicaoPaciente):
+    if _estado["fila_df"] is None:
+        raise HTTPException(status_code=404, detail="Nenhum dado processado ainda.")
+
+    df = _estado["fila_df"]
+    mask = df["solicitacao_id"].astype(str) == solicitacao_id
+    if not mask.any():
+        raise HTTPException(status_code=404, detail=f"Paciente {solicitacao_id} não encontrado.")
+
+    campos = edicao.model_dump(exclude_none=True)
+    for col, val in campos.items():
+        df.loc[mask, col] = val
+
+    df = _recalcular_fila(df)
+    _estado["fila_df"] = df
+    _estado["fila"] = _fila_para_json(df)
+
+    paciente = next(
+        (p for p in _estado["fila"] if str(p.get("solicitacao_id")) == solicitacao_id),
+        None,
+    )
+    if paciente is None:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado após edição.")
+    return JSONResponse(paciente)
 
 
 @app.get("/api/exportar/completo")
@@ -193,7 +290,10 @@ def exportar_entrega():
 
 
 # ── Servir front estático ────────────────────────────────────────────────────
-# Montado depois dos endpoints para não sobrescrever /api e /processar
+# Montado depois dos endpoints para não sobrescrever /api e /processar.
+# O StaticFiles retorna 405 para POST em paths que não existem como arquivo,
+# mas como o endpoint POST /api/fila/{id}/editar está registrado antes deste
+# mount, o FastAPI o resolve primeiro — o mount só captura o que sobra.
 app.mount("/", StaticFiles(directory=FRONT_DIR, html=True), name="front")
 
 
