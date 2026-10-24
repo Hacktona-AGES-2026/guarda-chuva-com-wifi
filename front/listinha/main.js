@@ -88,7 +88,7 @@ function exibirDetalhesPaciente(p) {
         <hr style="margin:10px 0; border-color:#eee">
         <p><strong>Classe SWALIS:</strong> <span style="color:${cor}; font-size:1.1em">${p.classe_swalis}</span></p>
         <p><strong>Score final:</strong> ${p.score_final}
-           &nbsp;(base ${p.score_classe} + agrav. ${p.score_agravamento} + tempo ${p.ajuste_tempo} + risco ${p.ajuste_risco} - preop ${p.penalidade_pre_op})</p>
+           &nbsp;(base ${p.score_classe} + agrav. ${p.score_agravamento} + equidade ${p.score_equidade} + risco ${p.ajuste_risco} - preop ${p.penalidade_pre_op})</p>
         <p><strong>Dias em fila:</strong> ${p.dias_em_fila}</p>
         <hr style="margin:10px 0; border-color:#eee">
         <p style="font-style:italic; font-weight:normal; text-transform:none; font-size:0.85rem">${p.justificativa}</p>

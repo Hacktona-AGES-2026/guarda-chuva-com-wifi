@@ -60,7 +60,7 @@ def _fila_para_json(fila: pd.DataFrame) -> list[dict]:
         "idade", "sexo", "municipio", "especialidade",
         "cid_principal", "cid_descricao", "procedimento",
         "classe_swalis", "score_final", "score_classe",
-        "score_agravamento", "ajuste_tempo", "ajuste_risco",
+        "score_agravamento", "score_equidade", "ajuste_risco",
         "penalidade_pre_op", "dias_em_fila", "justificativa",
     ]
     df = fila[~fila["is_duplicata"]][cols].copy()

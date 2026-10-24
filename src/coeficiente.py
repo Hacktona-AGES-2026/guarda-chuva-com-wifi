@@ -4,17 +4,37 @@ coeficiente.py
 Calcula o score_final de criticidade para cada solicitação cirúrgica.
 
 Fórmula:
-  score_final = score_classe          (0–100)  classe SWALIS domina
-              + score_agravamento     (0–30)   eventos de piora
+  score_final = score_classe          (0–100)  urgência clínica base (SWALIS)
+              + score_agravamento     (0–30)   eventos de piora durante a espera
               + score_texto           (0–20)   análise LLM (0 se offline)
-              + ajuste_tempo          (0–15)   bônus por espera além do prazo
+              + score_equidade        (0–∞)    bônus crescente por atraso relativo ao prazo da classe
               + ajuste_risco          (0–10)   perfil de risco do paciente
               - penalidade_pre_op     (0–5)    pré-operatório não pronto
+
+Equidade:
+  score_equidade = (atraso_relativo ^ 1.4) * fator_classe
+  onde atraso_relativo = dias_em_fila / prazo_da_classe  (1.0 = no prazo exato)
+  e fator_classe é menor para classes menos urgentes (evita inversão prematura).
+
+  Isso faz com que um paciente B esperando 4× seu prazo (240d) eventualmente
+  supere um A2 recém-chegado — mas nunca supere um oncológico (CID C*), pois
+  oncológicos têm score_classe 85–100 + proteção explícita na ordenação final.
+
+Regra de ouro (garantida em dois níveis):
+  1. score_classe de oncológicos (≥85) é maior que qualquer D ou C (~10–47).
+  2. Proteção explícita na ordenação final: oncológicos são elevados acima de
+     qualquer paciente marcado como sem_urgencia_clinica.
 """
 import math
 import pandas as pd
 
 from classificar_swalis import CLASSE_PRAZO
+
+# Fator de crescimento do score de equidade por classe.
+# Classes mais urgentes crescem mais devagar (já têm score_classe alto).
+# Classes menos urgentes crescem mais rápido para compensar esperas longas.
+# Calibrado para que scores finais fiquem em escala ~0-500 na prática.
+_FATOR_EQUIDADE = {"A1": 2, "A2": 3, "B": 5, "C": 7, "D": 8}
 
 
 # ── Agravamento por eventos (0–30) ───────────────────────────────────────────
@@ -60,19 +80,31 @@ def _score_llm(row: pd.Series, llm_df: pd.DataFrame | None) -> float:
     return min(raw_score * 2 + bonus, 20)  # normaliza 0-10 para 0-20
 
 
-# ── Ajuste de tempo de espera (0–15) ─────────────────────────────────────────
+# ── Score de equidade — sem teto, baseado em múltiplos do prazo ──────────────
 
-def _ajuste_tempo(row: pd.Series) -> float:
-    """Bônus crescente para pacientes que já ultrapassaram o prazo da sua classe."""
+def _score_equidade(row: pd.Series) -> float:
+    """
+    Bônus de equidade ilimitado para evitar fome de categorias.
+
+    Usa o atraso *relativo* ao prazo da classe (não dias absolutos), então
+    um B com 4x o prazo compete com um A2 com 1x o prazo — mas o fator_classe
+    menor de A2 freia a escalada das classes menos urgentes.
+
+    Curva: (atraso_relativo ^ 1.4) * fator_classe
+      - atraso_relativo < 1.0  → score 0 (dentro do prazo)
+      - atraso_relativo = 2.0  → dobrou o prazo
+      - atraso_relativo = 4.0  → quadruplicou o prazo
+    """
     classe = str(row.get("classe_swalis", "D"))
-    prazo = CLASSE_PRAZO.get(classe, 360)
-    dias  = int(row.get("dias_em_fila", 0))
+    prazo  = CLASSE_PRAZO.get(classe, 360)
+    dias   = int(row.get("dias_em_fila", 0))
+    fator  = _FATOR_EQUIDADE.get(classe, 20)
 
     if dias <= prazo:
         return 0.0
-    # log do excedente normalizado: quanto mais além do prazo, maior o bônus
-    excedente = dias - prazo
-    return min(math.log1p(excedente) * 1.5, 15)
+
+    atraso_relativo = dias / prazo  # ex: 2.0 = dobrou o prazo
+    return (atraso_relativo ** 1.4) * fator
 
 
 # ── Ajuste de risco do paciente (0–10) ───────────────────────────────────────
@@ -154,7 +186,8 @@ def _gerar_justificativa(row: pd.Series, llm_df: pd.DataFrame | None) -> str:
     dias = int(row.get("dias_em_fila", 0))
     prazo = CLASSE_PRAZO.get(classe, 360)
     if dias > prazo:
-        partes.append(f"aguardando {dias} dias (prazo da classe: {prazo} dias)")
+        multiplo = dias / prazo
+        partes.append(f"aguardando {dias} dias ({multiplo:.1f}x o prazo da classe de {prazo} dias)")
 
     if llm_df is not None and row.get("solicitacao_id") in llm_df.index:
         llm = llm_df.loc[row["solicitacao_id"]]
@@ -179,7 +212,7 @@ def calcular_coeficiente(fila: pd.DataFrame, llm_df: pd.DataFrame | None = None)
 
     fila["score_agravamento"] = fila.apply(_score_agravamento, axis=1)
     fila["score_llm"]         = fila.apply(lambda r: _score_llm(r, llm_df), axis=1)
-    fila["ajuste_tempo"]      = fila.apply(_ajuste_tempo, axis=1)
+    fila["score_equidade"]    = fila.apply(_score_equidade, axis=1)
     fila["ajuste_risco"]      = fila.apply(_ajuste_risco, axis=1)
     fila["penalidade_pre_op"] = fila.apply(_penalidade_pre_op, axis=1)
     fila["justificativa"]     = fila.apply(lambda r: _gerar_justificativa(r, llm_df), axis=1)
@@ -188,7 +221,7 @@ def calcular_coeficiente(fila: pd.DataFrame, llm_df: pd.DataFrame | None = None)
         fila["score_classe"]
         + fila["score_agravamento"]
         + fila["score_llm"]
-        + fila["ajuste_tempo"]
+        + fila["score_equidade"]
         + fila["ajuste_risco"]
         - fila["penalidade_pre_op"]
     )
@@ -196,15 +229,38 @@ def calcular_coeficiente(fila: pd.DataFrame, llm_df: pd.DataFrame | None = None)
     # Desistências detectadas pelo LLM vão para o fim absoluto
     fila.loc[fila["score_llm"] < -10, "score_final"] = -999
 
-    # Ordem da classe garante que A1 > A2 > B > C > D independente do score_final
-    ORDEM_CLASSE = {"A1": 0, "A2": 1, "B": 2, "C": 3, "D": 4}
-    fila["ordem_classe"] = fila["classe_swalis"].map(ORDEM_CLASSE).fillna(5)
-
-    # Ordenar: classe primeiro, depois score dentro da classe, desempate por dias em fila
-    fila = fila.sort_values(
-        ["ordem_classe", "score_final", "dias_em_fila"],
-        ascending=[True, False, False],
+    # ── Regra de ouro: oncológico nunca abaixo de paciente sem urgência clínica ──
+    # Identifica pacientes sem urgência (mesma definição do verificador oficial)
+    CID_URGENTES = {"I200", "K403", "K400", "K420", "K430", "K800", "N132", "I832"}
+    import re
+    KW = re.compile(
+        r"encarcer|estrangul|colangite|icter|pancreatite|sepse|hidronefrose|"
+        r"perda ponderal|disfagia|hemoptise|sangramento espontaneo|acamad|"
+        r"crescimento rapido|retencao urinaria aguda|massa anexial",
+        re.IGNORECASE,
     )
+    def _sem_urgencia(r):
+        if r.get("oncologico"): return False
+        if r.get("cid_norm","") in CID_URGENTES: return False
+        if r.get("piora_recente_count", 0) > 0: return False
+        if r.get("biopsia_positiva_count", 0) > 0: return False
+        txt = str(r.get("justificativa_clinica","")) + " " + str(r.get("observacoes",""))
+        if KW.search(txt): return False
+        if int(r.get("intensidade_dor_eva", 0)) > 3: return False
+        if str(r.get("limitacao_funcional","nenhuma")).lower() not in ("nenhuma","leve"): return False
+        return True
+
+    fila["sem_urgencia"] = fila.apply(_sem_urgencia, axis=1)
+
+    # Score mínimo para oncológicos = score máximo dos sem_urgencia + 1
+    if fila["sem_urgencia"].any() and fila["oncologico"].any():
+        score_max_calmo = fila.loc[fila["sem_urgencia"], "score_final"].max()
+        mask_onco_baixo = fila["oncologico"] & (fila["score_final"] <= score_max_calmo)
+        if mask_onco_baixo.any():
+            fila.loc[mask_onco_baixo, "score_final"] = score_max_calmo + 1
+
+    # Ordenar por score_final desc, desempate por dias_em_fila desc
+    fila = fila.sort_values(["score_final", "dias_em_fila"], ascending=[False, False])
     fila = fila.reset_index(drop=True)
     fila["posicao"] = fila.index + 1
 
@@ -226,7 +282,7 @@ if __name__ == "__main__":
 
     print("=== Top 10 mais críticos ===")
     cols = ["posicao", "solicitacao_id", "cid_principal", "classe_swalis",
-            "score_final", "dias_em_fila", "especialidade"]
+            "score_final", "score_equidade", "dias_em_fila", "especialidade"]
     print(fila[cols].head(10).to_string(index=False))
     print()
     print("=== Score médio por classe ===")
