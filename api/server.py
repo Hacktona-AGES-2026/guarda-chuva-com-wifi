@@ -382,11 +382,32 @@ def detalhar_solicitacao(sol_id: int):
     if sol is None:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
 
-    nome_por_id = {str(p["solicitacao_id"]): p.get("nome_paciente", "") for p in (_estado["fila"] or [])}
-    nova_ordem_enriquecida = [
-        {"posicao": i + 1, "solicitacao_id": sid, "nome_paciente": nome_por_id.get(sid, "—")}
-        for i, sid in enumerate(sol["nova_ordem"])
-    ]
+    paciente_por_id = {str(p["solicitacao_id"]): p for p in (_estado["fila"] or [])}
+    pos_anterior_por_id = {str(p["solicitacao_id"]): p["posicao"] for p in (_estado["fila"] or [])}
+
+    nova_ordem_enriquecida = []
+    for i, sid in enumerate(sol["nova_ordem"]):
+        p = paciente_por_id.get(sid, {})
+        nova_pos = i + 1
+        ant_pos = sol["ordem_anterior"].index(sid) + 1 if sid in sol["ordem_anterior"] else pos_anterior_por_id.get(sid)
+        nova_ordem_enriquecida.append({
+            "posicao_nova": nova_pos,
+            "posicao_anterior": ant_pos,
+            "solicitacao_id": sid,
+            "nome_paciente": p.get("nome_paciente", "—"),
+            "idade": p.get("idade"),
+            "sexo": p.get("sexo"),
+            "municipio": p.get("municipio"),
+            "especialidade": p.get("especialidade"),
+            "procedimento": p.get("procedimento"),
+            "cid_principal": p.get("cid_principal"),
+            "cid_descricao": p.get("cid_descricao"),
+            "classe_swalis": p.get("classe_swalis"),
+            "score_final": p.get("score_final"),
+            "dias_em_fila": p.get("dias_em_fila"),
+            "historico": _historico.get(sid, []),
+        })
+
     return JSONResponse({**sol, "nova_ordem_detalhada": nova_ordem_enriquecida})
 
 

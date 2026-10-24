@@ -368,3 +368,189 @@ main {
     font-weight: 600;
     text-transform: none;
 }
+
+/* CARDS DE PACIENTE NO DETALHE */
+.detalhe-pacientes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.detalhe-ordem-titulo {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.paciente-detalhe-card {
+    background: #f4f7f9;
+    border-left: 4px solid #ccc;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.paciente-detalhe-card.card-moveu {
+    border-left-color: #d15847;
+}
+
+.pac-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pac-pos {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.pos-de {
+    color: #d15847;
+    text-decoration: line-through;
+}
+
+.pos-seta {
+    color: #d15847;
+    font-size: 1rem;
+}
+
+.pos-para {
+    color: #22c55e;
+}
+
+.pos-igual {
+    color: #3b82f6;
+}
+
+.pac-nome {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #111;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex: 1;
+}
+
+.pac-sid {
+    font-size: 0.7rem;
+    color: #aaa;
+    font-weight: 400;
+    text-transform: none;
+    flex-shrink: 0;
+}
+
+.pac-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 12px;
+    font-size: 0.78rem;
+    color: #555;
+    font-weight: 400;
+    text-transform: none;
+}
+
+.pac-info strong {
+    font-weight: 700;
+    color: #333;
+}
+
+.pac-historico {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 8px;
+}
+
+.pac-historico-titulo {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #d15847;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+}
+
+.hist-vazio {
+    font-size: 0.75rem;
+    color: #aaa;
+    font-style: italic;
+    font-weight: 400;
+    text-transform: none;
+}
+
+.hist-item {
+    background: #fff;
+    border-left: 2px solid #d15847;
+    border-radius: 0 4px 4px 0;
+    padding: 6px 8px;
+    margin-bottom: 5px;
+    font-size: 0.75rem;
+}
+
+.hist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.hist-data {
+    font-weight: 700;
+    color: #555;
+    text-transform: none;
+}
+
+.hist-pos {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #3b82f6;
+    background: #eff6ff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: none;
+}
+
+.hist-campo {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+    text-transform: none;
+}
+
+.hist-campo-nome {
+    font-weight: 700;
+    color: #888;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    min-width: 80px;
+}
+
+.hist-de {
+    color: #d15847;
+    font-weight: 500;
+    text-decoration: line-through;
+    word-break: break-word;
+}
+
+.hist-seta { color: #aaa; font-weight: 700; }
+
+.hist-para {
+    color: #22c55e;
+    font-weight: 600;
+    word-break: break-word;
+}
