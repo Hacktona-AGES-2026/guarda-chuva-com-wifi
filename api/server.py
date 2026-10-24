@@ -68,7 +68,7 @@ def _fila_para_json(fila: pd.DataFrame) -> list[dict]:
     df["posicao"] = df.index + 1
     # Arredondar floats para não poluir o JSON
     float_cols = ["score_final", "score_classe", "score_agravamento",
-                  "ajuste_tempo", "ajuste_risco", "penalidade_pre_op"]
+                  "score_equidade", "ajuste_risco", "penalidade_pre_op"]
     df[float_cols] = df[float_cols].round(2)
     return df.to_dict(orient="records")
 
