@@ -196,8 +196,15 @@ def calcular_coeficiente(fila: pd.DataFrame, llm_df: pd.DataFrame | None = None)
     # Desistências detectadas pelo LLM vão para o fim absoluto
     fila.loc[fila["score_llm"] < -10, "score_final"] = -999
 
-    # Ordenar: maior score primeiro; desempate por dias_em_fila desc
-    fila = fila.sort_values(["score_final", "dias_em_fila"], ascending=[False, False])
+    # Ordem da classe garante que A1 > A2 > B > C > D independente do score_final
+    ORDEM_CLASSE = {"A1": 0, "A2": 1, "B": 2, "C": 3, "D": 4}
+    fila["ordem_classe"] = fila["classe_swalis"].map(ORDEM_CLASSE).fillna(5)
+
+    # Ordenar: classe primeiro, depois score dentro da classe, desempate por dias em fila
+    fila = fila.sort_values(
+        ["ordem_classe", "score_final", "dias_em_fila"],
+        ascending=[True, False, False],
+    )
     fila = fila.reset_index(drop=True)
     fila["posicao"] = fila.index + 1
 
